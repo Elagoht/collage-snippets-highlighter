@@ -1,0 +1,208 @@
+{
+  "collage page": {
+    "prefix": "cpage",
+    "description": "collage: a page with a path and a content fragment",
+    "body": [
+      "collage.NewPage(\"${1:name}\").",
+      "\tWithContent(${2:content}).",
+      "\tWithPath(\"${3:en}\", \"${4:/path}\").",
+      "\tBuild()"
+    ]
+  },
+  "collage page function": {
+    "prefix": "cpagef",
+    "description": "collage: a function returning a page with a layout, like a scaffolded project's pages",
+    "body": [
+      "func ${1:Home}Page() *collage.Page {",
+      "\tcontent := collage.NewFragment(\"${2:home}\", \"pages/${2:home}.html\").Build()",
+      "",
+      "\treturn collage.NewPage(\"${2:home}\").",
+      "\t\tWithLayout(${3:layouts.Layout()}).",
+      "\t\tWithContent(content).",
+      "\t\tWithPath(\"${4:en}\", \"${5:/}\").",
+      "\t\tBuild()",
+      "}"
+    ]
+  },
+  "collage fragment": {
+    "prefix": "cfrag",
+    "description": "collage: a fragment rendering a template",
+    "body": ["collage.NewFragment(\"${1:name}\", \"${2:components/$1.html}\").Build()"]
+  },
+  "collage fragment with data": {
+    "prefix": "cfragd",
+    "description": "collage: a fragment with a data handler returning its data and dependency tags",
+    "body": [
+      "collage.NewFragment(\"${1:name}\", \"${2:components/$1.html}\").",
+      "\tWithDataHandler(func(ctx context.Context, rc *collage.RenderContext) (any, []string, error) {",
+      "\t\t${3:data, err := load(ctx)}",
+      "\t\treturn ${4:data}, []string{\"${5:tag}\"}, ${6:err}",
+      "\t}).",
+      "\tBuild()"
+    ]
+  },
+  "collage fragment with a slot": {
+    "prefix": "cfrags",
+    "description": "collage: a fragment with another fragment bound into its slot",
+    "body": [
+      "collage.NewFragment(\"${1:name}\", \"${2:components/$1.html}\").",
+      "\tWithSlotFragment(\"${3:slot}\", ${4:child}).",
+      "\tBuild()"
+    ]
+  },
+  "collage typed loader": {
+    "prefix": "cload",
+    "description": "collage: a typed data handler with collage.Load",
+    "body": [
+      "collage.Load(func(ctx context.Context, rc *collage.RenderContext) (${1:View}, error) {",
+      "\t$0",
+      "\treturn ${1:View}{}, nil",
+      "})"
+    ]
+  },
+  "collage effect": {
+    "prefix": "ceffect",
+    "description": "collage: a data handler that only declares things for the page — a title, structured data",
+    "body": [
+      "collage.Effect(func(ctx context.Context, rc *collage.RenderContext) error {",
+      "\t${1:rc.HoistTitle(\"Title\")}",
+      "\treturn nil",
+      "})"
+    ]
+  },
+  "collage cached value": {
+    "prefix": "ccached",
+    "description": "collage: a value shared across renders until its TTL passes or a tag is invalidated",
+    "body": [
+      "${1:value}, err := collage.Cached(rc, \"${2:key}\", ${3:time.Minute}, []string{\"${4:tag}\"},",
+      "\tfunc(ctx context.Context) (${5:Type}, error) { return ${6:fetch(ctx)} })"
+    ]
+  },
+  "collage once": {
+    "prefix": "conce",
+    "description": "collage: a value fetched once per render, shared by the fragments that need it",
+    "body": [
+      "${1:value}, err := collage.Once(rc, \"${2:key}\",",
+      "\tfunc(ctx context.Context) (${3:Type}, error) { return ${4:fetch(ctx)} })"
+    ]
+  },
+  "collage action": {
+    "prefix": "caction",
+    "description": "collage: a form action — a refused submission renders the form again with 422, an accepted one redirects",
+    "body": [
+      "collage.NewAction(\"${1:name}\").",
+      "\tWithPath(\"${2:en}\", \"${3:/path}\").",
+      "\tWithMethods(http.MethodPost).",
+      "\tWithHandler(func(ctx context.Context, rc *collage.RenderContext) (*collage.ActionResult, error) {",
+      "\t\tif err := rc.Request.ParseForm(); err != nil {",
+      "\t\t\treturn nil, err",
+      "\t\t}",
+      "\t\t$0",
+      "\t\treturn collage.SeeOther(\"${4:/done}\"), nil",
+      "\t}).",
+      "\tBuild()"
+    ]
+  },
+  "collage document": {
+    "prefix": "cdoc",
+    "description": "collage: a document — a sitemap, a feed, a JSON file — served at the site's root",
+    "body": [
+      "collage.NewDocument(\"${1:name}\", \"${2:application/json}\").",
+      "\tAtRoot(\"${3:/data.json}\").",
+      "\tWithHandler(func(ctx context.Context, rc *collage.RenderContext) ([]byte, []string, error) {",
+      "\t\t$0",
+      "\t\treturn ${4:body}, []string{\"${5:tag}\"}, nil",
+      "\t}).",
+      "\tBuild()"
+    ]
+  },
+  "collage register": {
+    "prefix": "creg",
+    "description": "collage: register a page and return the error",
+    "body": [
+      "if err := app.RegisterPage(${1:page}); err != nil {",
+      "\treturn fmt.Errorf(\"register page %q: %w\", ${1:page}.Name, err)",
+      "}"
+    ]
+  },
+  "collage invalidate": {
+    "prefix": "cinval",
+    "description": "collage: invalidate everything cached from these tags",
+    "body": [
+      "if err := app.InvalidateTags(ctx, \"${1:tag}\"); err != nil {",
+      "\t${2:log.Printf(\"invalidate: %v\", err)}",
+      "}"
+    ]
+  },
+  "collage middleware": {
+    "prefix": "cmw",
+    "description": "collage: middleware around every request, registered with app.Use",
+    "body": [
+      "if err := app.Use(func(next http.Handler) http.Handler {",
+      "\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {",
+      "\t\t$0",
+      "\t\tnext.ServeHTTP(w, r)",
+      "\t})",
+      "}); err != nil {",
+      "\treturn err",
+      "}"
+    ]
+  },
+  "collage plugin": {
+    "prefix": "cplugin",
+    "description": "collage: a plugin skeleton — options read from the application's plugin configuration",
+    "body": [
+      "// Name is the plugin's name, and the key its configuration is found under.",
+      "const Name = \"${1:you}/${2:name}\"",
+      "",
+      "// Options configures the plugin.",
+      "type Options struct {",
+      "\t${3:Enabled bool `json:\"enabled\"`}",
+      "}",
+      "",
+      "// Plugin ${4:does what}.",
+      "type Plugin struct {",
+      "\topts Options",
+      "}",
+      "",
+      "// New returns a plugin with opts as its starting point, which the application's",
+      "// own configuration is then decoded over.",
+      "func New(opts Options) *Plugin { return &Plugin{opts: opts} }",
+      "",
+      "func (p *Plugin) Name() string                   { return Name }",
+      "func (p *Plugin) Version() string                { return \"0.1.0\" }",
+      "func (p *Plugin) Shutdown(context.Context) error { return nil }",
+      "",
+      "// Init reads the configuration.",
+      "func (p *Plugin) Init(_ context.Context, host collage.Host) error {",
+      "\tif err := host.Config(&p.opts); err != nil {",
+      "\t\treturn err",
+      "\t}",
+      "\t$0",
+      "\treturn nil",
+      "}"
+    ]
+  },
+  "collage after-render hook": {
+    "prefix": "cafter",
+    "description": "collage: a plugin's AfterRender hook — read, rewrite or check what a page rendered",
+    "body": [
+      "// OnAfterRender ${1:checks what the page rendered}.",
+      "func (p *Plugin) OnAfterRender(ctx context.Context, ev *collage.AfterRenderEvent) error {",
+      "\t$0",
+      "\treturn nil",
+      "}"
+    ]
+  },
+  "collage before-render hook": {
+    "prefix": "cbefore",
+    "description": "collage: a plugin's BeforeRender hook — declare defaults the page can replace",
+    "body": [
+      "// OnBeforeRender ${1:declares the site's defaults}.",
+      "func (p *Plugin) OnBeforeRender(ctx context.Context, ev *collage.BeforeRenderEvent) error {",
+      "\t$0",
+      "\treturn nil",
+      "}"
+    ]
+  }
+}

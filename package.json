@@ -1,0 +1,98 @@
+{
+  "name": "collage-snippets-highlighter",
+  "displayName": "Collage Snippets & Highlighter",
+  "description": "Snippets, template highlighting, completion and plugins-config.json validation for collage, the Go framework for server-rendered pages — its template functions and those of its published plugins.",
+  "version": "0.1.0",
+  "publisher": "elagoht",
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Elagoht/collage-snippets-highlighter"
+  },
+  "homepage": "https://collage.furkanbaytekin.dev",
+  "bugs": "https://github.com/Elagoht/collage-snippets-highlighter/issues",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Snippets",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "collage",
+    "go",
+    "golang",
+    "html/template",
+    "go template",
+    "snippets"
+  ],
+  "activationEvents": [
+    "onLanguage:html"
+  ],
+  "main": "./out/src/extension.js",
+  "contributes": {
+    "snippets": [
+      {
+        "language": "go",
+        "path": "./snippets/go.json"
+      },
+      {
+        "language": "html",
+        "path": "./snippets/html.json"
+      }
+    ],
+    "grammars": [
+      {
+        "scopeName": "collage.template.injection",
+        "path": "./syntaxes/collage-template.tmLanguage.json",
+        "injectTo": [
+          "text.html.basic",
+          "text.html.derivative"
+        ]
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "plugins-config.json",
+        "url": "./schemas/plugins-config.schema.json"
+      }
+    ],
+    "configuration": {
+      "title": "Collage",
+      "properties": {
+        "collage.completions": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "In workspaces whose go.mod requires github.com/Elagoht/collage.",
+            "In every HTML file.",
+            "Never."
+          ],
+          "default": "auto",
+          "description": "Where to offer collage's template functions and data-collage-* attributes, and show their documentation on hover."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build-grammar.mjs && tsc -p .",
+    "schema": "go run -C tools/schemagen . -out ../../schemas/plugins-config.schema.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "package": "npm run build && vsce package",
+    "test:integration": "npm run build && node test/integration/run.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.5.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.0.0"
+  }
+}

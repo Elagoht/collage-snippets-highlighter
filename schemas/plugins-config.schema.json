@@ -1,0 +1,1244 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://collage.furkanbaytekin.dev/schemas/plugins-config.json",
+  "type": "object",
+  "description": "Plugin configuration for a collage application, keyed by plugin name. Loaded with collage.LoadPluginConfig and passed as Config.PluginConfig.",
+  "properties": {
+    "elagoht/accesslog": {
+      "type": "object",
+      "description": "A collage plugin that writes one log line per request.",
+      "properties": {
+        "requestIdHeader": {
+          "type": "string",
+          "description": "RequestIDHeader is the header a request id is read from and sent back in. Default \"X-Request-ID\"."
+        },
+        "sample": {
+          "type": "number",
+          "description": "Sample is the fraction of successful (2xx) responses logged, between 0 and 1: 0.1 logs one in ten. Zero, the default, logs every one. A redirect, a client error and a server error are always logged: they are the lines someone goes looking for."
+        },
+        "skip": {
+          "type": "array",
+          "description": "Skip are path prefixes never logged. Default [\"/_collage/\", \"/healthz\"]: collage's development endpoints, and the health check a load balancer polls every few seconds. An empty list in configuration logs everything.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trustProxy": {
+          "type": "boolean",
+          "description": "TrustProxy reads the client's address from X-Forwarded-For, or X-Real-IP, when the request came from a trusted proxy. Without it those headers are ignored, since anybody can send them."
+        },
+        "trustedProxies": {
+          "type": "array",
+          "description": "TrustedProxies are the addresses and CIDR ranges of the proxies in front of the site. Empty trusts loopback and private addresses, which is what a reverse proxy on the same host or network has.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin that writes one log line per request.\n\n[collage-accesslog](https://github.com/Elagoht/collage-accesslog)"
+    },
+    "elagoht/analytics": {
+      "type": "object",
+      "description": "A collage plugin that adds an analytics snippet to every page's head.",
+      "properties": {
+        "exclude": {
+          "type": "array",
+          "description": "Exclude are names of pages that get no snippet: an admin page, a page behind a login.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "goatcounter": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Code is the site's code: \"mysite\" counts at mysite.goatcounter.com."
+            },
+            "endpoint": {
+              "type": "string",
+              "description": "Endpoint is the count URL, for a self-hosted server: \"https://stats.example.com/count\". Default from Code."
+            },
+            "script": {
+              "type": "string",
+              "description": "Script is the script's URL. Default \"https://gc.zgo.at/count.js\"."
+            }
+          }
+        },
+        "googleAnalytics": {
+          "type": "object",
+          "description": "GoogleAnalytics is Google Analytics 4. It sets cookies and sends what it collects to Google: it is not privacy-friendly, and in much of the world it needs the visitor's consent — see RequireConsent.",
+          "properties": {
+            "measurementId": {
+              "type": "string",
+              "description": "MeasurementID is the stream's id: \"G-XXXXXXXXXX\"."
+            }
+          }
+        },
+        "loaderPath": {
+          "type": "string",
+          "description": "LoaderPath is where the plugin's loader script is served, when there is one: with RespectDNT, RequireConsent or Google Analytics. Default \"/collage-analytics.js\"."
+        },
+        "plausible": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "type": "string",
+              "description": "Domain is the site as Plausible knows it: \"example.com\". Several, comma-separated, send each view to each."
+            },
+            "script": {
+              "type": "string",
+              "description": "Script is the script's URL, for a self-hosted server or one of Plausible's script variants. Default \"https://plausible.io/js/script.js\"."
+            }
+          }
+        },
+        "requireConsent": {
+          "type": "boolean",
+          "description": "RequireConsent loads nothing until the page calls window.collageAnalyticsConsent(). The site shows its own banner and calls it when the visitor agrees; the answer is remembered in localStorage, and collageAnalyticsConsent(false) forgets it."
+        },
+        "respectDnt": {
+          "type": "boolean",
+          "description": "RespectDNT loads nothing for a browser sending Do Not Track or Global Privacy Control. The check runs in the browser, before any provider's script is fetched; a page cached for everyone cannot make it on the server."
+        },
+        "umami": {
+          "type": "object",
+          "properties": {
+            "script": {
+              "type": "string",
+              "description": "Script is the script's URL. Default \"https://cloud.umami.is/script.js\"."
+            },
+            "websiteId": {
+              "type": "string",
+              "description": "WebsiteID is the site's id, a UUID."
+            }
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin that adds an analytics snippet to every page's head.\n\n[collage-analytics](https://github.com/Elagoht/collage-analytics)"
+    },
+    "elagoht/basicauth": {
+      "type": "object",
+      "description": "A collage plugin that puts HTTP Basic authentication in front of a site: a staging deployment, a preview, a site not launched yet.",
+      "properties": {
+        "disabled": {
+          "type": "boolean",
+          "description": "Disabled turns the plugin off, as EnvDisabled does. A disabled plugin needs no users."
+        },
+        "protect": {
+          "type": "array",
+          "description": "Protect are the path prefixes that need a sign-in. Default [\"/\"], everything.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "realm": {
+          "type": "string",
+          "description": "Realm is what the browser's sign-in dialog names. Default \"Restricted\"."
+        },
+        "skip": {
+          "type": "array",
+          "description": "Skip are path prefixes that never do, even under Protect. Default [\"/healthz\", \"/_collage/\"]: a load balancer's health check has no password, and neither does collage's development reload stream.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "users": {
+          "type": "object",
+          "description": "Users maps a name to a password: in plain text, as \"sha256:\" and the hex of its SHA-256, or as a bcrypt hash (\"$2a$…\", \"$2b$…\", \"$2y$…\"). A plain password that happens to begin with one of those is written \"plain:…\". Users from EnvUsers are added to these, and win on a name in both.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin that puts HTTP Basic authentication in front of a site: a staging deployment, a preview, a site not launched yet.\n\n[collage-basicauth](https://github.com/Elagoht/collage-basicauth)"
+    },
+    "elagoht/bundle": {
+      "type": "object",
+      "description": "A collage plugin that bundles an application's JavaScript, TypeScript and CSS with esbuild, and serves the output under content-hashed names.",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "Dir is the directory the sources are in, relative to the working directory: \"assets\". Required."
+        },
+        "entries": {
+          "type": "array",
+          "description": "Entries are the files to bundle, relative to Dir: \"app.ts\", \"app.css\". Each is bundled with everything it imports. Required.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "minify": {
+          "type": "boolean",
+          "description": "Minify minifies the output. Default: on, except in development."
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Prefix is the URL prefix the output is served under. Default \"/_bundle/\"."
+        },
+        "sourcemap": {
+          "type": "boolean",
+          "description": "Sourcemap writes a source map beside each script and stylesheet, and links it. Default: on in development only."
+        },
+        "target": {
+          "type": "string",
+          "description": "Target is the language level the output must run on: \"es2018\", \"es2020\", \"esnext\". Default \"esnext\", which leaves the syntax as it was written."
+        }
+      },
+      "markdownDescription": "A collage plugin that bundles an application's JavaScript, TypeScript and CSS with esbuild, and serves the output under content-hashed names.\n\n[collage-bundle](https://github.com/Elagoht/collage-bundle)"
+    },
+    "elagoht/cdnpurge": {
+      "type": "object",
+      "description": "A collage plugin that purges a CDN's copies of the pages collage invalidates.",
+      "properties": {
+        "backoff": {
+          "type": "string",
+          "description": "Backoff is the wait before the first retry, doubled before each one after it. A 429's Retry-After, when longer, is honoured instead. Default \"1s\".",
+          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+          "examples": [
+            "30s",
+            "5m"
+          ]
+        },
+        "baseURL": {
+          "type": "string",
+          "description": "BaseURL is the public origin the CDN serves the site at, \"https://example.com\": collage names paths, and a CDN purges URLs. Required."
+        },
+        "cloudflare": {
+          "type": "object",
+          "description": "Cloudflare purges a Cloudflare zone. At least one of Cloudflare and Webhook is required; with both, both are purged.",
+          "properties": {
+            "apiToken": {
+              "type": "string",
+              "description": "APIToken is an API token with the Zone → Cache Purge permission for the zone. Required. Keep it out of a configuration file under version control."
+            },
+            "batchSize": {
+              "type": "integer",
+              "description": "BatchSize is how many URLs one purge request carries. Default 30, which is what every Cloudflare plan accepts; an Enterprise zone takes more."
+            },
+            "endpoint": {
+              "type": "string",
+              "description": "Endpoint is the API's base URL. Default \"https://api.cloudflare.com\"."
+            },
+            "zoneID": {
+              "type": "string",
+              "description": "ZoneID is the zone's identifier, on the zone's overview page. Required."
+            }
+          }
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Force purges from a development server too, which otherwise purges nothing."
+        },
+        "retries": {
+          "type": "integer",
+          "description": "Retries is how many times a request the CDN answered 429 or 5xx, or that did not reach it, is tried again. Default 4; negative tries once."
+        },
+        "timeout": {
+          "type": "string",
+          "description": "Timeout bounds one request to the CDN. Default \"10s\".",
+          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+          "examples": [
+            "30s",
+            "5m"
+          ]
+        },
+        "webhook": {
+          "type": "object",
+          "description": "Webhook posts the URLs to an endpoint of your own, or of a CDN whose API takes a list of URLs.",
+          "properties": {
+            "batchSize": {
+              "type": "integer",
+              "description": "BatchSize is how many URLs one request carries. Default: all of them."
+            },
+            "token": {
+              "type": "string",
+              "description": "Token, when set, is sent as \"Authorization: Bearer \u003ctoken\u003e\"."
+            },
+            "url": {
+              "type": "string",
+              "description": "URL receives the POST. Required."
+            }
+          }
+        },
+        "window": {
+          "type": "string",
+          "description": "Window is how long invalidations are collected before they are sent, so a burst of them is one request. Default \"2s\".",
+          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+          "examples": [
+            "30s",
+            "5m"
+          ]
+        }
+      },
+      "markdownDescription": "A collage plugin that purges a CDN's copies of the pages collage invalidates.\n\n[collage-cdnpurge](https://github.com/Elagoht/collage-cdnpurge)"
+    },
+    "elagoht/compress": {
+      "type": "object",
+      "description": "A collage plugin that compresses responses with Brotli and gzip.",
+      "properties": {
+        "brotliLevel": {
+          "type": "integer",
+          "description": "BrotliLevel is the Brotli level of a served response, 1 to 11. Default 5: above it Brotli grows slow enough to cost more time than the bytes it saves on a response compressed while the reader waits."
+        },
+        "buildBrotliLevel": {
+          "type": "integer"
+        },
+        "buildGzipLevel": {
+          "type": "integer",
+          "description": "BuildGzipLevel and BuildBrotliLevel are the levels of the files a static build writes, compressed once and served many times. Default 9 and 11."
+        },
+        "cacheBytes": {
+          "type": "integer",
+          "description": "CacheBytes bounds the cache of compressed bodies, in bytes. Default 32 MiB; negative turns the cache off."
+        },
+        "gzipLevel": {
+          "type": "integer",
+          "description": "GzipLevel is the gzip level of a served response, 1 to 9. Default 6."
+        },
+        "minSize": {
+          "type": "integer",
+          "description": "MinSize is the size in bytes below which a response is sent as it is: a small body gains a few bytes at best, and costs a compressor either way. Default 1024."
+        },
+        "noPrecompress": {
+          "type": "boolean",
+          "description": "NoPrecompress stops a static build from writing .br and .gz files."
+        },
+        "types": {
+          "type": "array",
+          "description": "Types are media types to compress beyond the built-in ones: \"font/ttf\", \"application/x-yaml\".",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin that compresses responses with Brotli and gzip.\n\n[collage-compress](https://github.com/Elagoht/collage-compress)"
+    },
+    "elagoht/devtoolbar": {
+      "type": "object",
+      "description": "A collage plugin that shows a small panel at the bottom of every page in development. It takes no configuration from JSON: it is configured in Go.",
+      "markdownDescription": "A collage plugin that shows a small panel at the bottom of every page in development.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)\n\nIt takes no configuration from JSON: it is configured in Go."
+    },
+    "elagoht/favicon": {
+      "type": "object",
+      "description": "A collage plugin that makes a site's icons from one source image and links them from every page's head.",
+      "properties": {
+        "backgroundColor": {
+          "type": "string"
+        },
+        "display": {
+          "type": "string",
+          "description": "Display is the manifest's display mode. Default \"standalone\"."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name and ShortName are the site's name in the manifest: what an installed app is called, and the shorter label under its icon. ShortName defaults to Name."
+        },
+        "noManifest": {
+          "type": "boolean",
+          "description": "NoManifest leaves out site.webmanifest, and its \u003clink\u003e."
+        },
+        "shortName": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source is the path of the source image: a PNG (or JPEG, or GIF), square, ideally 512 pixels or larger. It is read from FS when FS is set, and from disk, relative to the working directory, otherwise. Ignored when Image is set."
+        },
+        "startUrl": {
+          "type": "string",
+          "description": "StartURL is the page an installed app opens on. Default \"/\"."
+        },
+        "svg": {
+          "type": "string",
+          "description": "SVG is the path of an SVG version of the icon, read the way Source is and served unchanged as /icon.svg. Optional: an SVG is not rasterised, so it is never a substitute for Source."
+        },
+        "themeColor": {
+          "type": "string",
+          "description": "ThemeColor colours the browser's interface around the site, in the head's \u003cmeta name=\"theme-color\"\u003e and the manifest. BackgroundColor is the splash screen's colour while an installed app starts, and what the Apple touch icon's transparent pixels are filled with — iOS fills them with black otherwise. Each is a CSS hex colour, \"#0f172a\", or a colour name; empty leaves it out."
+        }
+      },
+      "markdownDescription": "A collage plugin that makes a site's icons from one source image and links them from every page's head.\n\n[collage-favicon](https://github.com/Elagoht/collage-favicon)"
+    },
+    "elagoht/feed": {
+      "type": "object",
+      "description": "A collage plugin that serves RSS 2.0 and Atom 1.0 feeds. It takes no configuration from JSON: it is configured in Go.",
+      "markdownDescription": "A collage plugin that serves RSS 2.0 and Atom 1.0 feeds.\n\n[collage-feed](https://github.com/Elagoht/collage-feed)\n\nIt takes no configuration from JSON: it is configured in Go."
+    },
+    "elagoht/flash": {
+      "type": "object",
+      "description": "A collage plugin for flash messages: a message an action sets before it redirects, shown once by the page it redirects to.",
+      "properties": {
+        "cookie": {
+          "type": "string",
+          "description": "Cookie is the cookie's name. Default \"collage_flash\"."
+        },
+        "key": {
+          "type": "string",
+          "description": "KeyHex is Key, hex-encoded, as configuration carries it."
+        },
+        "maxAge": {
+          "type": "integer",
+          "description": "MaxAge is how many seconds an unshown message waits before it is dropped. Default 300."
+        }
+      },
+      "markdownDescription": "A collage plugin for flash messages: a message an action sets before it redirects, shown once by the page it redirects to.\n\n[collage-flash](https://github.com/Elagoht/collage-flash)"
+    },
+    "elagoht/highlight": {
+      "type": "object",
+      "description": "A collage plugin that colours code with chroma.",
+      "properties": {
+        "auto": {
+          "type": "boolean",
+          "description": "Auto colours the code blocks already on a rendered page: \u003cpre\u003e\u003ccode class=\"language-go\"\u003e, as Markdown renderers write them. On by default; false leaves only {{highlight}}."
+        },
+        "dark": {
+          "type": "string"
+        },
+        "light": {
+          "type": "string",
+          "description": "Light and Dark are the chroma styles of the two themes, chosen by the reader's prefers-color-scheme: \"github\", \"monokai\", \"dracula\"… Default \"github\" and \"github-dark\". Dark \"-\" leaves the dark theme out, and Light is then used in both."
+        },
+        "noBackground": {
+          "type": "boolean",
+          "description": "NoBackground leaves the block's background colour to the site's own stylesheet, keeping the theme's text colours."
+        }
+      },
+      "markdownDescription": "A collage plugin that colours code with chroma.\n\n[collage-highlight](https://github.com/Elagoht/collage-highlight)"
+    },
+    "elagoht/honeypot": {
+      "type": "object",
+      "description": "A collage plugin that stops form spam without a CAPTCHA: a decoy field people never see, and a signed timestamp that says how long the form was open.",
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field is the decoy's name: something a bot is keen to fill in. Default \"website\"."
+        },
+        "key": {
+          "type": "string",
+          "description": "KeyHex is Key, hex-encoded, as configuration carries it."
+        },
+        "maxAge": {
+          "type": "integer",
+          "description": "MaxAge is how many seconds a served form stays good for. Default 86400, one day."
+        },
+        "maxBody": {
+          "type": "integer",
+          "description": "MaxBody is the largest body, in bytes, the plugin reads to check it; a larger form body is refused with 413. Default 4 MiB, collage's own default limit on an action's body. Raise it with an action's WithMaxBodyBytes for a form that uploads large files."
+        },
+        "minDelay": {
+          "type": "number",
+          "description": "MinDelay is how many seconds a form must be open before it is sent; a person takes longer than that to read and fill one in. Default 2; -1 turns the check off."
+        },
+        "protect": {
+          "type": "array",
+          "description": "Protect are the path prefixes whose submissions are checked. Default [\"/\"], every form the site accepts — each of which must then carry {{honeypot}}.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "silent": {
+          "type": "boolean",
+          "description": "Silent answers a refused submission with 303 See Other to the page it came from, as an accepted form is answered, so a bot believes it succeeded and does not try another way. Default false: 400 Bad Request."
+        },
+        "skip": {
+          "type": "array",
+          "description": "Skip are path prefixes never checked, even under Protect. Default [\"/_collage/\"].",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin that stops form spam without a CAPTCHA: a decoy field people never see, and a signed timestamp that says how long the form was open.\n\n[collage-honeypot](https://github.com/Elagoht/collage-honeypot)"
+    },
+    "elagoht/htmlcheck": {
+      "type": "object",
+      "description": "A collage plugin that checks the HTML a site renders and reports what it finds as warnings and errors.",
+      "properties": {
+        "descriptionMax": {
+          "type": "integer"
+        },
+        "ignoreLinks": {
+          "type": "array",
+          "description": "IgnoreLinks are path prefixes \"broken-link\" does not check: a route served by a handler of your own, an API.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inProduction": {
+          "type": "boolean",
+          "description": "InProduction checks pages on a production server too. Its findings go nowhere there — collage shows them only in development and in builds — so this is only for a check of your own reading them in a hook."
+        },
+        "pageBudget": {
+          "type": "integer",
+          "description": "PageBudget is the size in bytes past which a page is reported by \"page-size\". Zero leaves the rule silent."
+        },
+        "rules": {
+          "type": "object",
+          "description": "Rules changes rules' levels, by name. A rule not named keeps its default; see Rules() for every rule and its default.",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "error",
+              "off",
+              "warn"
+            ]
+          }
+        },
+        "titleMax": {
+          "type": "integer",
+          "description": "TitleMax and DescriptionMax are the lengths, in characters, past which a search engine cuts a title or a description short. Default 60 and 160."
+        }
+      },
+      "markdownDescription": "A collage plugin that checks the HTML a site renders and reports what it finds as warnings and errors.\n\n[collage-htmlcheck](https://github.com/Elagoht/collage-htmlcheck)"
+    },
+    "elagoht/i18n": {
+      "type": "object",
+      "description": "A collage plugin for translations.",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "Dir is the directory of the catalogs within FS. Default \"locales\"."
+        }
+      },
+      "markdownDescription": "A collage plugin for translations.\n\n[collage-i18n](https://github.com/Elagoht/collage-i18n)"
+    },
+    "elagoht/indexnow": {
+      "type": "object",
+      "description": "A collage plugin that tells search engines which URLs changed, through the IndexNow protocol: Bing, Yandex, Seznam, Naver and the others that share what one of them is told.",
+      "properties": {
+        "baseURL": {
+          "type": "string",
+          "description": "BaseURL is the site's origin, \"https://example.com\": IndexNow is told absolute URLs, and the application cannot know its own host. Required."
+        },
+        "batchSize": {
+          "type": "integer",
+          "description": "BatchSize caps how many URLs one request carries. Default and at most MaxBatch."
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Endpoint is where the URLs are posted. Default DefaultEndpoint; a search engine's own, \"https://www.bing.com/indexnow\", works the same."
+        },
+        "exclude": {
+          "type": "array",
+          "description": "Exclude are path prefixes never sent: \"/api/\", \"/search\".",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inDevelopment": {
+          "type": "boolean",
+          "description": "InDevelopment sends from a development server too, which is otherwise silent: what changes on a laptop is not news to a search engine."
+        },
+        "key": {
+          "type": "string",
+          "description": "Key proves the site is yours: 8 to 128 letters, digits and dashes, served at /\u003ckey\u003e.txt. Required. Any value works; keep it the same across deployments."
+        },
+        "retries": {
+          "type": "integer",
+          "description": "Retries is how many more times a request is tried when the endpoint answers 429 or 5xx, or cannot be reached. Default 3; negative tries once."
+        },
+        "window": {
+          "type": "string",
+          "description": "WindowString is Window as configuration carries it: \"10s\", \"1m\"."
+        }
+      },
+      "markdownDescription": "A collage plugin that tells search engines which URLs changed, through the IndexNow protocol: Bing, Yandex, Seznam, Naver and the others that share what one of them is told.\n\n[collage-indexnow](https://github.com/Elagoht/collage-indexnow)"
+    },
+    "elagoht/jsonld": {
+      "type": "object",
+      "description": "A collage plugin that emits schema.org structured data into the document head.",
+      "properties": {
+        "disabled": {
+          "type": "boolean",
+          "description": "Disabled turns structured data off without removing the plugin from the application: the site-wide node is not declared, and every Emit in the render returns without doing anything."
+        },
+        "searchURL": {
+          "type": "string",
+          "description": "SearchURL is a search endpoint with \"{query}\" where the term goes. It is part of the WebSite node, and ignored without SiteName."
+        },
+        "siteName": {
+          "type": "string",
+          "description": "SiteName and SiteURL describe the site. When SiteName is set, a WebSite node is declared on every page — as a default, which a page emitting its own WebSite replaces."
+        },
+        "siteURL": {
+          "type": "string"
+        }
+      },
+      "markdownDescription": "A collage plugin that emits schema.org structured data into the document head.\n\n[collage-jsonld](https://github.com/Elagoht/collage-jsonld)"
+    },
+    "elagoht/live": {
+      "type": "object",
+      "description": "A collage plugin that keeps parts of a page current in the browser: it serves a small client script that refreshes the fragments a page opened with WithFragmentPath, on an interval or when the server pushes a change over an event stream.",
+      "properties": {
+        "keepAlive": {
+          "type": "string",
+          "description": "KeepAlive is how often an idle stream sends a comment, so a proxy that closes quiet connections leaves it open. Default 25s.",
+          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+          "examples": [
+            "30s",
+            "5m"
+          ]
+        },
+        "maxFragments": {
+          "type": "integer",
+          "description": "MaxFragments caps how many fragments one stream may watch. Default 32."
+        },
+        "maxStreamAge": {
+          "type": "string",
+          "description": "MaxStreamAge closes a stream after it has been open this long, and the client reconnects at once. A stream renders with the cookies it was opened with, so a reader who signed out elsewhere keeps receiving what the old cookie reads until it reconnects; this bounds how long. Nothing is lost — the reconnect sends what changed. Zero, the default, never closes one.",
+          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+          "examples": [
+            "30s",
+            "5m"
+          ]
+        },
+        "noStream": {
+          "type": "boolean",
+          "description": "NoStream turns the event stream off. The client then only polls: an element marked data-collage-push without an interval is polled every five seconds."
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Prefix is where the client and the stream are served: the client at \u003cprefix\u003eclient/client.js, the stream at \u003cprefix\u003estream/. It begins and ends with a slash. Default \"/_live/\"."
+        }
+      },
+      "markdownDescription": "A collage plugin that keeps parts of a page current in the browser: it serves a small client script that refreshes the fragments a page opened with WithFragmentPath, on an interval or when the server pushes a change over an event stream.\n\n[collage-live](https://github.com/Elagoht/collage-live)"
+    },
+    "elagoht/markdown": {
+      "type": "object",
+      "description": "A collage plugin that makes a directory of Markdown files page data.",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "Dir is the directory in FS whose *.md files are the documents: one file per document, named for its slug. Subdirectories are not read, so a translation can live in one. Default \".\"."
+        },
+        "drafts": {
+          "type": "boolean",
+          "description": "Drafts includes documents whose front matter says draft: true. Off, a draft is not listed, not built, and answers 404."
+        },
+        "localeDirs": {
+          "type": "object",
+          "description": "LocaleDirs gives a locale its own directory: {\"tr\": \"content/blog/tr\"}. A locale not named reads Dir.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "unsafe": {
+          "type": "boolean",
+          "description": "Unsafe lets raw HTML written in the Markdown through to the page. Off, it is left out, so a document cannot put a script on the site."
+        }
+      },
+      "markdownDescription": "A collage plugin that makes a directory of Markdown files page data.\n\n[collage-markdown](https://github.com/Elagoht/collage-markdown)"
+    },
+    "elagoht/meta": {
+      "type": "object",
+      "description": "A collage plugin that writes the tags a page is shared and indexed by into its head: Open Graph, Twitter cards, the canonical URL, the meta description, and the page's translations.",
+      "properties": {
+        "baseURL": {
+          "type": "string",
+          "description": "BaseURL is the site's origin, \"https://example.com\". Required: a canonical URL and an og:image are absolute, and the application cannot know its own host."
+        },
+        "defaultImage": {
+          "type": "string",
+          "description": "DefaultImage is the og:image of a page that names none: a path on the site, made absolute with BaseURL, or an absolute URL."
+        },
+        "defaultImageAlt": {
+          "type": "string",
+          "description": "DefaultImageAlt describes DefaultImage."
+        },
+        "locales": {
+          "type": "object",
+          "description": "Locales maps a collage locale to the og:locale it is written as: \"en\" to \"en_US\". A locale not in it is written as it is, with \"-\" made \"_\".",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "noAlternates": {
+          "type": "boolean",
+          "description": "NoAlternates leaves out the \u003clink rel=\"alternate\" hreflang\u003e tags, for a site whose layout writes its own."
+        },
+        "siteName": {
+          "type": "string",
+          "description": "SiteName is og:site_name."
+        },
+        "twitterSite": {
+          "type": "string",
+          "description": "TwitterSite is the site's own account, \"@example\", sent as twitter:site."
+        }
+      },
+      "markdownDescription": "A collage plugin that writes the tags a page is shared and indexed by into its head: Open Graph, Twitter cards, the canonical URL, the meta description, and the page's translations.\n\n[collage-meta](https://github.com/Elagoht/collage-meta)"
+    },
+    "elagoht/minimizer": {
+      "type": "object",
+      "description": "A collage plugin that strips whitespace and comments from what an application serves: rendered pages, documents, and mounted assets.",
+      "properties": {
+        "css": {
+          "type": "boolean",
+          "description": "CSS minifies mounted stylesheets."
+        },
+        "html": {
+          "type": "boolean",
+          "description": "HTML minifies rendered pages, and any mounted \".html\" file."
+        },
+        "js": {
+          "type": "boolean",
+          "description": "JS minifies mounted scripts. Newlines are preserved whatever this is set to; see minifyJS."
+        },
+        "json": {
+          "type": "boolean",
+          "description": "JSON minifies documents and mounted files served as JSON. It is exact: encoding/json knows the whole grammar."
+        }
+      },
+      "markdownDescription": "A collage plugin that strips whitespace and comments from what an application serves: rendered pages, documents, and mounted assets.\n\n[collage-minimizer](https://github.com/Elagoht/collage-minimizer)"
+    },
+    "elagoht/offline": {
+      "type": "object",
+      "description": "A collage plugin that serves a service worker, so the pages a visitor has read open again without a network.",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "description": "Assets are the path prefixes of the static files served stale-while-revalidate. Default [\"/static/\"]; an empty list keeps only the content-hashed URLs, which are always cached.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fallback": {
+          "type": "string",
+          "description": "Fallback is the path of the page shown for a page that is neither reachable nor kept: \"/offline\". It is precached, and a worker that cannot fetch it does not install. Empty shows the browser's own offline error."
+        },
+        "inDev": {
+          "type": "boolean",
+          "description": "InDev serves the real worker, and renders {{offlineScript}}, in development too."
+        },
+        "maxAssets": {
+          "type": "integer"
+        },
+        "maxPages": {
+          "type": "integer",
+          "description": "MaxPages and MaxAssets cap how many responses each cache keeps, dropping the oldest. Default 50 and 200; negative keeps everything."
+        },
+        "precache": {
+          "type": "array",
+          "description": "Precache are paths fetched when the worker installs, so they open offline before anyone has visited them: \"/\", \"/about\", \"/static/app.css\". Each is best effort; one that fails is logged in the browser's console and the rest are kept.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "type": "string",
+          "description": "Version names the application's build in the cache version. Empty uses collage's Host.BuildID; see the README for when to set it yourself."
+        }
+      },
+      "markdownDescription": "A collage plugin that serves a service worker, so the pages a visitor has read open again without a network.\n\n[collage-offline](https://github.com/Elagoht/collage-offline)"
+    },
+    "elagoht/opti-image": {
+      "type": "object",
+      "description": "A collage plugin that rewrites images declaring a width and a height to resized copies it serves itself.",
+      "properties": {
+        "allowedOrigins": {
+          "type": "array",
+          "description": "AllowedOrigins is the set of hosts images may be fetched from. An empty list disables the plugin entirely rather than allowing everything: a fetcher that defaults to \"any host\" is an SSRF primitive wearing a feature's name.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "scheme": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "alphaThreshold": {
+          "type": "number",
+          "description": "AlphaThreshold is how much of an image may be visibly transparent while it still counts as opaque when its format is decided from the image — for a source without an extension. A share of the pixels, 0 to 1. Defaults to 0. A pixel at least 98% opaque is never counted: that is edge anti-aliasing a reader cannot see, and one of them used to be enough to send a photograph to a lossless format at several times its size. Raise this to also let a few genuinely transparent pixels go — 0.001 is a thousandth of the image — and keep it low: a photograph with rounded, transparent corners that is judged opaque becomes a JPEG with square ones."
+        },
+        "cacheBytes": {
+          "type": "integer",
+          "description": "CacheBytes caps the memory held by resized images. Defaults to 64 MiB."
+        },
+        "cacheDir": {
+          "type": "string",
+          "description": "CacheDir is where produced images are kept between restarts. An empty value means \".cache/opti-image\", relative to the working directory. A dotted directory in the project, the way a build tool does it — findable, one line in .gitignore, and gone when you delete it. The temporary directory would keep it out of sight, which is the problem rather than the point: on macOS that is /var/folders/xy/…/T, and a cache nobody can find is a cache nobody can clear."
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Disabled turns the plugin off without removing it from the application."
+        },
+        "fetchTimeout": {
+          "type": "string",
+          "description": "FetchTimeout bounds a single origin fetch. Defaults to 10s. In JSON it is written the way a person writes a duration — \"10s\", \"500ms\" — as well as as a number of nanoseconds. See Duration.",
+          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+          "examples": [
+            "30s",
+            "5m"
+          ]
+        },
+        "maxPixels": {
+          "type": "integer",
+          "description": "MaxPixels refuses an origin image with more pixels than this, before it is decoded. Defaults to 40 million. A small file can decode to an enormous bitmap — the decompression bomb — and the byte limit above does not see it."
+        },
+        "maxSourceBytes": {
+          "type": "integer",
+          "description": "MaxSourceBytes refuses an origin image larger than this. Defaults to 8 MiB. Without it, one hostile or careless origin can exhaust the process's memory."
+        },
+        "noDiskCache": {
+          "type": "boolean",
+          "description": "NoDiskCache keeps produced images in memory only, so nothing is written anywhere. A read-only deployment does not need this — a directory that cannot be created or written to disables the disk cache by itself, with one line in the log — but a deployment that would rather not write at all can say so."
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Prefix is the URL prefix optimised images are served under. It must begin and end with \"/\". Defaults to \"/_image/\"."
+        },
+        "quality": {
+          "type": "integer",
+          "description": "Quality is the JPEG quality of re-encoded images, 1..100. Defaults to 82."
+        },
+        "webp": {
+          "type": "integer",
+          "description": "WebP says which images are re-encoded to WebP: none, all, or — \"auto\" — only those that would otherwise be lossless. See WebPMode."
+        }
+      },
+      "markdownDescription": "A collage plugin that rewrites images declaring a width and a height to resized copies it serves itself.\n\n[collage-opti-image](https://github.com/Elagoht/collage-opti-image)"
+    },
+    "elagoht/otel": {
+      "type": "object",
+      "description": "A collage plugin for OpenTelemetry tracing.",
+      "properties": {
+        "skip": {
+          "type": "array",
+          "description": "Skip are path prefixes whose requests get no server span: a health check a load balancer polls every second is noise in a trace store. Their collage.http span is still started, as a trace of its own, when this package is collage's Tracer.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin for OpenTelemetry tracing.\n\n[collage-otel](https://github.com/Elagoht/collage-otel)"
+    },
+    "elagoht/prometheus": {
+      "type": "object",
+      "description": "A collage plugin that exports the framework's metrics to Prometheus, and serves them at /metrics.",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path is where the metrics are served. Default \"/metrics\"; \"-\" serves them nowhere, for an application that serves its registry itself."
+        },
+        "token": {
+          "type": "string",
+          "description": "Token, when set, is required as \"Authorization: Bearer \u003ctoken\u003e\" on the metrics path. Without it anyone who can reach the site can read its metrics — page names, error rates, traffic."
+        }
+      },
+      "markdownDescription": "A collage plugin that exports the framework's metrics to Prometheus, and serves them at /metrics.\n\n[collage-prometheus](https://github.com/Elagoht/collage-prometheus)"
+    },
+    "elagoht/ratelimit": {
+      "type": "object",
+      "description": "A collage plugin that limits how fast one client can hit the site: a token bucket per client, per rule, answered with 429 once it is empty.",
+      "properties": {
+        "maxKeys": {
+          "type": "integer",
+          "description": "MaxKeys is the most clients each rule keeps a bucket for. Past it, an arbitrary bucket is dropped to make room, which bounds memory however many addresses a flood comes from. Default 100000."
+        },
+        "rules": {
+          "type": "array",
+          "description": "Rules are tried in order and the first that matches a request counts it; a request no rule matches is not limited. Empty is one rule: every method but GET, HEAD and OPTIONS, everywhere, at half a request a second with a burst of ten.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "burst": {
+                "type": "integer",
+                "description": "Burst is how many requests a client can make at once before Rate applies, and the size of the bucket. Default Rate rounded up, at least one."
+              },
+              "methods": {
+                "type": "array",
+                "description": "Methods the rule matches. Empty is every method but GET, HEAD and OPTIONS; [\"*\"] is every method.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "pathPrefix": {
+                "type": "string",
+                "description": "PathPrefix the rule matches. Empty is \"/\", every path."
+              },
+              "rate": {
+                "type": "number",
+                "description": "Rate is how many requests a second the bucket refills by, and so the rate a client can keep up: 0.1 is one request every ten seconds."
+              }
+            }
+          }
+        },
+        "skip": {
+          "type": "array",
+          "description": "Skip are path prefixes never limited. Default [\"/_collage/\"], collage's own development endpoints.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trustProxy": {
+          "type": "boolean",
+          "description": "TrustProxy reads the client's address from X-Forwarded-For, or X-Real-IP, when the request came from a trusted proxy. Without it those headers are ignored: anybody can send them, and a limit keyed on them is a limit every client can step around by changing a header."
+        },
+        "trustedProxies": {
+          "type": "array",
+          "description": "TrustedProxies are the addresses and CIDR ranges of the proxies in front of the site. Empty trusts loopback and private addresses, which is what a reverse proxy on the same host or network has.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin that limits how fast one client can hit the site: a token bucket per client, per rule, answered with 429 once it is empty.\n\n[collage-ratelimit](https://github.com/Elagoht/collage-ratelimit)"
+    },
+    "elagoht/redirects": {
+      "type": "object",
+      "description": "A collage plugin for redirects kept in a file rather than in code: what a site migration leaves behind, hundreds of old addresses and where each one went.",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "File is the redirects file's name. Default \"redirects.txt\"."
+        },
+        "noRedirectsFile": {
+          "type": "boolean",
+          "description": "NoRedirectsFile leaves out /_redirects, the copy of the rules a static host reads."
+        },
+        "rules": {
+          "type": "array",
+          "description": "Rules are redirects given in Go or configuration, checked after the file's.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "description": "From is the old path: \"/about-us\", or a prefix, \"/blog/*\", matching \"/blog\", \"/blog/\" and everything under it."
+              },
+              "status": {
+                "type": "integer",
+                "description": "Status is 301, the default, 302, 307, 308, or 410 for a page that is gone and has no replacement."
+              },
+              "to": {
+                "type": "string",
+                "description": "To is where it went: a path on the site or an absolute URL. For a prefix, \":splat\" in it is what the \"*\" matched. \"-\" for a rule that is gone."
+              }
+            }
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin for redirects kept in a file rather than in code: what a site migration leaves behind, hundreds of old addresses and where each one went.\n\n[collage-redirects](https://github.com/Elagoht/collage-redirects)"
+    },
+    "elagoht/robots": {
+      "type": "object",
+      "description": "A collage plugin that serves /robots.txt.",
+      "properties": {
+        "disallowAll": {
+          "type": "boolean",
+          "description": "DisallowAll closes the site to every crawler, whatever Rules say, and serves every response with X-Robots-Tag: noindex, nofollow. For a staging or preview deployment."
+        },
+        "rules": {
+          "type": "array",
+          "description": "Rules are the groups of robots.txt, in order. Empty allows every crawler everything.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "allow": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "crawlDelay": {
+                "type": "integer",
+                "description": "CrawlDelay asks for this many seconds between requests; zero leaves it out. Not every crawler honours it."
+              },
+              "disallow": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "userAgents": {
+                "type": "array",
+                "description": "UserAgents the group applies to; empty is \"*\".",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "sitemaps": {
+          "type": "array",
+          "description": "Sitemaps are the absolute URLs of the site's sitemaps.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin that serves /robots.txt.\n\n[collage-robots](https://github.com/Elagoht/collage-robots)"
+    },
+    "elagoht/search": {
+      "type": "object",
+      "description": "A collage plugin for search on a static site.",
+      "properties": {
+        "exclude": {
+          "type": "array",
+          "description": "Exclude are path prefixes left out of the index: \"/admin/\", \"/tags/\".",
+          "items": {
+            "type": "string"
+          }
+        },
+        "locales": {
+          "type": "object",
+          "description": "Locales replaces Text for a locale; a field left empty keeps Text's.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Label labels the field. Default \"Search\"."
+              },
+              "noResults": {
+                "type": "string",
+                "description": "NoResults says nothing was found. Default \"No results\"."
+              },
+              "oneResult": {
+                "type": "string"
+              },
+              "placeholder": {
+                "type": "string",
+                "description": "Placeholder is the field's placeholder. Default \"Search the site\"."
+              },
+              "results": {
+                "type": "string",
+                "description": "Results announces how many pages were found, \"{n}\" standing for the number; OneResult announces one. Default \"{n} results\" and \"1 result\"."
+              },
+              "unavailable": {
+                "type": "string",
+                "description": "Unavailable is shown where there is no index: on a server rather than on the exported site. Default \"Search is available on the exported site.\""
+              }
+            }
+          }
+        },
+        "maxText": {
+          "type": "integer",
+          "description": "MaxText is how many characters of a page's text the index keeps. Default 5000: enough to find a page by what it says, without an index the size of the site."
+        }
+      },
+      "markdownDescription": "A collage plugin for search on a static site.\n\n[collage-search](https://github.com/Elagoht/collage-search)"
+    },
+    "elagoht/secure": {
+      "type": "object",
+      "description": "A collage plugin that sends the security headers a site should, and a Content-Security-Policy with per-request nonces.",
+      "properties": {
+        "crossOriginOpenerPolicy": {
+          "type": "string",
+          "description": "CrossOriginOpenerPolicy is Cross-Origin-Opener-Policy. Default \"same-origin\"."
+        },
+        "csp": {
+          "type": "string",
+          "description": "CSP is the Content-Security-Policy. \"{nonce}\" in it is replaced by the response's nonce, which {{cspNonce}} puts on the page's inline scripts and styles. Empty sends none."
+        },
+        "cspReportOnly": {
+          "type": "boolean",
+          "description": "CSPReportOnly sends the policy as Content-Security-Policy-Report-Only: violations are reported, nothing is blocked. In development the policy is always report-only, so collage's own reload script keeps working."
+        },
+        "frameOptions": {
+          "type": "string",
+          "description": "FrameOptions is X-Frame-Options. Default \"SAMEORIGIN\"."
+        },
+        "hsts": {
+          "type": "integer",
+          "description": "HSTS is how long, in seconds, a browser should use only HTTPS for the site, sent on requests that arrived over TLS — directly or, by X-Forwarded-Proto, through a proxy. Default two years; negative sends none."
+        },
+        "hstsPreload": {
+          "type": "boolean"
+        },
+        "hstsSubdomains": {
+          "type": "boolean",
+          "description": "HSTSSubdomains and HSTSPreload add includeSubDomains and preload."
+        },
+        "noSniff": {
+          "type": "boolean",
+          "description": "NoSniff turns X-Content-Type-Options: nosniff off when false is set in configuration; it is on by default."
+        },
+        "permissionsPolicy": {
+          "type": "string",
+          "description": "PermissionsPolicy is Permissions-Policy: \"camera=(), microphone=()\". Empty sends none."
+        },
+        "referrerPolicy": {
+          "type": "string",
+          "description": "ReferrerPolicy is Referrer-Policy. Default \"strict-origin-when-cross-origin\"."
+        }
+      },
+      "markdownDescription": "A collage plugin that sends the security headers a site should, and a Content-Security-Policy with per-request nonces.\n\n[collage-secure](https://github.com/Elagoht/collage-secure)"
+    },
+    "elagoht/session": {
+      "type": "object",
+      "description": "A collage plugin for a session kept in a cookie: a small map of strings the site signs, and can encrypt, with no database behind it.",
+      "properties": {
+        "cookie": {
+          "type": "string",
+          "description": "Cookie is the cookie's name. Default \"collage_session\"."
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain is the cookie's domain. Default none: the host that set it."
+        },
+        "encrypt": {
+          "type": "boolean",
+          "description": "Encrypt encrypts the session with AES-GCM, so the reader cannot read what it holds. Without it the session is only signed: the reader can read it, and cannot change it."
+        },
+        "idleTimeout": {
+          "type": "integer",
+          "description": "IdleTimeout is how many seconds without a request end a session. Default 0, no idle limit. With one, the cookie is rewritten as the reader keeps coming back, at most every quarter of the timeout."
+        },
+        "key": {
+          "type": "string",
+          "description": "KeyHex is Key, hex-encoded, as configuration carries it."
+        },
+        "maxAge": {
+          "type": "integer",
+          "description": "MaxAge is how many seconds a session lives from when it was started or regenerated, however active its reader. Default 604800, a week."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is the cookie's path. Default \"/\"."
+        },
+        "previousKeys": {
+          "type": "array",
+          "description": "PreviousKeysHex is PreviousKeys, hex-encoded, as configuration carries them.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sameSite": {
+          "type": "string",
+          "description": "SameSite is \"lax\" (the default), \"strict\" or \"none\". \"none\" needs Secure."
+        },
+        "secure": {
+          "type": "boolean",
+          "description": "Secure sends the cookie over HTTPS only, always. Without it the cookie is Secure when the request arrived over TLS, or through a proxy that says so with X-Forwarded-Proto: https."
+        }
+      },
+      "markdownDescription": "A collage plugin for a session kept in a cookie: a small map of strings the site signs, and can encrypt, with no database behind it.\n\n[collage-session](https://github.com/Elagoht/collage-session)"
+    },
+    "elagoht/sitemap": {
+      "type": "object",
+      "description": "A collage plugin that serves /sitemap.xml from the pages the application registered.",
+      "properties": {
+        "baseURL": {
+          "type": "string",
+          "description": "BaseURL is the site's origin, as a reader's browser reaches it: \"https://example.com\". A sitemap lists absolute URLs, and the application cannot know which host it is served under. Required."
+        },
+        "exclude": {
+          "type": "array",
+          "description": "Exclude names pages to leave out: a thank-you page, a search page, anything a search engine has no reason to index.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxURLs": {
+          "type": "integer",
+          "description": "MaxURLs lowers the number of URLs per file below MaxURLs. Zero is MaxURLs."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is where the sitemap is served. Default \"/sitemap.xml\". The numbered files of an index are served under it without the extension: \"/sitemap/1.xml\", \"/sitemap/2.xml\"."
+        }
+      },
+      "markdownDescription": "A collage plugin that serves /sitemap.xml from the pages the application registered.\n\n[collage-sitemap](https://github.com/Elagoht/collage-sitemap)"
+    },
+    "elagoht/toc": {
+      "type": "object",
+      "description": "A collage plugin that gives a page's headings ids, and puts a table of contents and a reading time where the templates ask for them.",
+      "properties": {
+        "ids": {
+          "type": "boolean",
+          "description": "IDs gives headings ids on every page, not only on those with a placeholder, so any heading can be linked to. On by default."
+        },
+        "locales": {
+          "type": "object",
+          "description": "Locales replaces Text for a locale: {\"tr\": {Label: \"İçindekiler\", ReadingTime: \"{n} dk okuma\"}}. A field left empty keeps Text's.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Label names the table of contents to assistive technology: the \u003cnav\u003e's aria-label. Default \"Table of contents\"."
+              },
+              "readingTime": {
+                "type": "string",
+                "description": "ReadingTime is the reading time, \"{n}\" standing for the minutes. Default \"{n} min read\"."
+              }
+            }
+          }
+        },
+        "maxLevel": {
+          "type": "integer"
+        },
+        "minLevel": {
+          "type": "integer",
+          "description": "MinLevel and MaxLevel are the heading levels read. Default 2 and 4: the h1 is the page's title, and below h4 a table of contents is a list of everything."
+        },
+        "wpm": {
+          "type": "integer",
+          "description": "WPM is the reading speed, in words a minute. Default 225."
+        }
+      },
+      "markdownDescription": "A collage plugin that gives a page's headings ids, and puts a table of contents and a reading time where the templates ask for them.\n\n[collage-toc](https://github.com/Elagoht/collage-toc)"
+    },
+    "elagoht/validate": {
+      "type": "object",
+      "description": "A collage plugin for validating a form an action receives.",
+      "properties": {
+        "localeMessages": {
+          "type": "object",
+          "description": "LocaleMessages replaces messages for one locale, the render's: {\"tr\": {\"required\": \"Bu alan zorunludur.\"}}. It is looked at before Messages.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "messages": {
+          "type": "object",
+          "description": "Messages replaces the English message of a rule, for every locale: {\"required\": \"Please fill this in.\"}. A message may name the check's value in braces — {min}, {max}, {options}, {other} — which is replaced rather than formatted with fmt, so a translation that leaves the value out, or puts it elsewhere, is still correct. A key that is not a rule stops the application from starting.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "noRefill": {
+          "type": "array",
+          "description": "NoRefill names the fields whose submitted value is never put back in the form, matched case-insensitively as parts of the field's name. Unset, it is [\"password\"]: a password typed back into the page would sit in its HTML, in the browser's history and in any proxy that keeps it. Set, it replaces that default, so a list of your own should say \"password\" too.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "markdownDescription": "A collage plugin for validating a form an action receives.\n\n[collage-validate](https://github.com/Elagoht/collage-validate)"
+    },
+    "elagoht/websocket": {
+      "type": "object",
+      "description": "A collage plugin that carries collage-live's pushed fragments over a WebSocket instead of an event stream.",
+      "properties": {
+        "OriginPatterns": {
+          "type": "array",
+          "description": "OriginPatterns are the hosts, besides the site's own, whose pages may connect — as github.com/coder/websocket matches them. A connection carries the reader's cookies, so a page on another origin must not be able to open one on the reader's behalf; the default allows only the site itself.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "Path": {
+          "type": "string",
+          "description": "Path is where the WebSocket is served. It begins and ends with a slash. Default \"/_live/ws/\"."
+        },
+        "Ping": {
+          "type": "integer",
+          "description": "Ping is how often an idle connection is pinged, so a proxy that closes quiet connections leaves it open and a peer that vanished is noticed. Default 25s."
+        }
+      },
+      "markdownDescription": "A collage plugin that carries collage-live's pushed fragments over a WebSocket instead of an event stream.\n\n[collage-websocket](https://github.com/Elagoht/collage-websocket)"
+    }
+  },
+  "additionalProperties": {
+    "type": "object"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "$comment": "The one list of collage's template functions: the grammar, completion and hover are all built from it. Keep it in step with collage's DefaultFuncs and the plugins' AddTemplateFunc/AddRenderFunc calls.",
+  "functions": [
+    { "name": "slot", "source": "collage", "signature": "slot \"name\"", "insert": "slot \"${1:name}\"", "doc": "Renders the fragments bound to this fragment's slot named `name`, in binding order. A slot nothing fills renders empty.", "link": "fragments-and-slots" },
+    { "name": "hoist", "source": "collage", "signature": "hoist \"area\"", "insert": "hoist \"${1:head}\"", "doc": "Marks where content hoisted into `area` lands — the stylesheets, titles and meta tags fragments declare. The layout puts `{{hoist \"head\"}}` in its `<head>`.", "link": "head-and-seo" },
+    { "name": "asset", "source": "collage", "signature": "asset \"/path\"", "insert": "asset \"/static/${1:app.css}\"", "doc": "A mounted file's content-addressed URL, cacheable forever: `/static/app.3f9a….css`. An unknown path fails the render.", "link": "assets" },
+    { "name": "stylesheet", "source": "collage", "signature": "stylesheet \"/path\"", "insert": "stylesheet \"/static/${1:app.css}\"", "doc": "Hoists a `<link rel=\"stylesheet\">` for a mounted file into the head, by its content-addressed URL. Renders nothing where it is called.", "link": "assets" },
+    { "name": "csrfToken", "source": "collage", "signature": "csrfToken", "insert": "csrfToken", "doc": "The hidden input a form's forgery token travels in. Every form that posts to an action needs it.", "link": "forms-and-actions" },
+    { "name": "pageURL", "source": "collage", "signature": "pageURL \"name\" [\"param\" value ...]", "insert": "pageURL \"${1:name}\"", "doc": "The URL of the page or document registered as `name`, in this render's locale, with parameters filling its pattern. A link that cannot be built fails the render.", "link": "links-and-locales" },
+    { "name": "pageURLIn", "source": "collage", "signature": "pageURLIn \"locale\" \"name\" [\"param\" value ...]", "insert": "pageURLIn \"${1:tr}\" \"${2:name}\"", "doc": "`pageURL` in exactly the locale given.", "link": "links-and-locales" },
+    { "name": "localeURL", "source": "collage", "signature": "localeURL \"locale\"", "insert": "localeURL \"${1:tr}\"", "doc": "The page being rendered, in another locale, with the same path parameters — what a language switcher is made of. Empty when the page has no path in that locale.", "link": "links-and-locales" },
+    { "name": "fragmentURL", "source": "collage", "signature": "fragmentURL \"page\" \"fragment\" [\"param\" value ...]", "insert": "fragmentURL \"${1:page}\" \"${2:fragment}\"", "doc": "The path a page opened for one of its fragments with `WithFragmentPath`, in this render's locale.", "link": "forms-and-actions" },
+    { "name": "fragmentURLIn", "source": "collage", "signature": "fragmentURLIn \"locale\" \"page\" \"fragment\" [\"param\" value ...]", "insert": "fragmentURLIn \"${1:tr}\" \"${2:page}\" \"${3:fragment}\"", "doc": "`fragmentURL` in exactly the locale given.", "link": "forms-and-actions" },
+    { "name": "safeHTML", "source": "collage", "signature": "safeHTML s", "insert": "safeHTML ${1:.}", "doc": "Marks a string as trusted HTML, so it is not escaped. An escape hatch: only for markup you produced or validated.", "link": "template-functions" },
+    { "name": "safeURL", "source": "collage", "signature": "safeURL s", "insert": "safeURL ${1:.}", "doc": "Marks a string as a trusted URL, so html/template does not replace an unusual scheme with `#ZgotmplZ`. Validate it first.", "link": "template-functions" },
+    { "name": "dict", "source": "collage", "signature": "dict \"key\" value ...", "insert": "dict \"${1:key}\" ${2:.}", "doc": "Builds a map from key and value pairs, to pass several values to a sub-template.", "link": "template-functions" },
+    { "name": "default", "source": "collage", "signature": "default fallback value", "insert": "default \"${1:fallback}\" ${2:.}", "doc": "`value`, or `fallback` when `value` is empty.", "link": "template-functions" },
+    { "name": "upper", "source": "collage", "signature": "upper s", "insert": "upper ${1:.}", "doc": "The string in upper case.", "link": "template-functions" },
+    { "name": "lower", "source": "collage", "signature": "lower s", "insert": "lower ${1:.}", "doc": "The string in lower case.", "link": "template-functions" },
+    { "name": "title", "source": "collage", "signature": "title s", "insert": "title ${1:.}", "doc": "The string with each word's first letter in upper case.", "link": "template-functions" },
+    { "name": "join", "source": "collage", "signature": "join sep items", "insert": "join \"${1:, }\" ${2:.}", "doc": "The items joined with `sep`, as `strings.Join`.", "link": "template-functions" },
+    { "name": "formatTime", "source": "collage", "signature": "formatTime t layout", "insert": "formatTime ${1:.Date} \"${2:2006-01-02}\"", "doc": "The time formatted with a Go layout: `\"2006-01-02\"`, `\"2 Jan 2006\"`.", "link": "template-functions" },
+
+    { "name": "liveClient", "source": "elagoht/live", "signature": "liveClient", "insert": "liveClient", "doc": "The collage-live client script. Put it in the layout's `<head>`; elements marked `data-collage-fragment` are then kept current.", "repo": "collage-live" },
+    { "name": "searchBox", "source": "elagoht/search", "signature": "searchBox", "insert": "searchBox", "doc": "An accessible search form and its script, searching the index an export writes.", "repo": "collage-search" },
+    { "name": "offlineScript", "source": "elagoht/offline", "signature": "offlineScript [nonce]", "insert": "offlineScript", "doc": "Registers the service worker that keeps visited pages available offline. Renders nothing in development. With a CSP: `{{offlineScript cspNonce}}`.", "repo": "collage-offline" },
+    { "name": "cspNonce", "source": "elagoht/secure", "signature": "cspNonce", "insert": "cspNonce", "doc": "The response's Content-Security-Policy nonce, for an inline script or style: `<script nonce=\"{{cspNonce}}\">`. Fresh on every response, even for a cached page.", "repo": "collage-secure" },
+    { "name": "flashes", "source": "elagoht/flash", "signature": "flashes", "insert": "flashes", "doc": "The flash messages this request arrived with, each with `.Kind` and `.Text`; reading them clears them. `{{range flashes}}…{{end}}`.", "repo": "collage-flash" },
+    { "name": "t", "source": "elagoht/i18n", "signature": "t \"key\" [\"name\" value ...]", "insert": "t \"${1:key}\"", "doc": "The translation of `key` in the render's locale; name and value pairs fill `{name}`. Falls back to the default locale, then to the key.", "repo": "collage-i18n" },
+    { "name": "th", "source": "elagoht/i18n", "signature": "th \"key\" [\"name\" value ...]", "insert": "th \"${1:key}\"", "doc": "`t` for a translation holding markup: the catalog's markup is trusted, the values filling it are escaped.", "repo": "collage-i18n" },
+    { "name": "tn", "source": "elagoht/i18n", "signature": "tn \"key\" count [\"name\" value ...]", "insert": "tn \"${1:key}\" ${2:.Count}", "doc": "The plural form of `key` for `count` — `zero`, `one` or `other` — with `{count}` filled.", "repo": "collage-i18n" },
+    { "name": "fieldError", "source": "elagoht/validate", "signature": "fieldError \"field\"", "insert": "fieldError \"${1:field}\"", "doc": "The message for a field a refused submission failed, or empty.", "repo": "collage-validate" },
+    { "name": "fieldValue", "source": "elagoht/validate", "signature": "fieldValue \"field\" [fallback]", "insert": "fieldValue \"${1:field}\"", "doc": "What was submitted for a field, to fill the input again after a refusal; `fallback` on the first render. Passwords are never echoed.", "repo": "collage-validate" },
+    { "name": "hasErrors", "source": "elagoht/validate", "signature": "hasErrors", "insert": "hasErrors", "doc": "Whether the submission being shown again was refused.", "repo": "collage-validate" },
+    { "name": "honeypot", "source": "elagoht/honeypot", "signature": "honeypot", "insert": "honeypot", "doc": "The invisible decoy field and signed timestamp that stop form spam bots. Put it inside every protected form.", "repo": "collage-honeypot" },
+    { "name": "highlight", "source": "elagoht/highlight", "signature": "highlight code \"lang\"", "insert": "highlight ${1:.Code} \"${2:go}\"", "doc": "The code syntax-highlighted with CSS classes, and the stylesheet hoisted into the head.", "repo": "collage-highlight" },
+    { "name": "toc", "source": "elagoht/toc", "signature": "toc", "insert": "toc", "doc": "A table of contents of the page's h2–h4 headings, as a nested `<nav><ol>`.", "repo": "collage-toc" },
+    { "name": "readingTime", "source": "elagoht/toc", "signature": "readingTime", "insert": "readingTime", "doc": "\"N min read\" for the page's text.", "repo": "collage-toc" },
+    { "name": "bundle", "source": "elagoht/bundle", "signature": "bundle \"name\"", "insert": "bundle \"${1:app.js}\"", "doc": "The content-hashed URL of a bundle esbuild built: `<script src=\"{{bundle \"app.js\"}}\" defer>`.", "repo": "collage-bundle" }
+  ],
+  "builtins": {
+    "keywords": ["if", "else", "end", "range", "with", "template", "block", "define", "break", "continue"],
+    "functions": ["and", "or", "not", "len", "index", "slice", "print", "printf", "println", "eq", "ne", "lt", "le", "gt", "ge", "call", "html", "js", "urlquery"]
+  },
+  "attributes": [
+    { "name": "data-collage-fragment", "value": "{{fragmentURL \"${1:page}\" \"${2:fragment}\"}}", "doc": "collage-live: the fragment path whose answer fills the element.", "repo": "collage-live" },
+    { "name": "data-collage-interval", "value": "${1:2s}", "doc": "collage-live: fetch the fragment on this interval (`500ms`, `2s`, `1m`).", "repo": "collage-live" },
+    { "name": "data-collage-push", "value": null, "doc": "collage-live: take the fragment from the stream when the server pushes it.", "repo": "collage-live" },
+    { "name": "data-collage-swap", "value": "${1|morph,replace|}", "doc": "collage-live: `morph` patches the DOM in place, so a focused input keeps what is typed.", "repo": "collage-live" },
+    { "name": "data-collage-target", "value": "#${1:result}", "doc": "collage-live: on a form, submit with fetch and put the answer into this element.", "repo": "collage-live" }
+  ]
+}

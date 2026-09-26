@@ -26,12 +26,38 @@ type schema struct {
 	Type                 string             `json:"type,omitempty"`
 	Description          string             `json:"description,omitempty"`
 	Properties           map[string]*schema `json:"properties,omitempty"`
-	AdditionalProperties *schema            `json:"additionalProperties,omitempty"`
-	Items                *schema            `json:"items,omitempty"`
-	Enum                 []string           `json:"enum,omitempty"`
-	Pattern              string             `json:"pattern,omitempty"`
-	Examples             []string           `json:"examples,omitempty"`
-	Link                 string             `json:"markdownDescription,omitempty"`
+	AdditionalProperties *schema            `json:"-"`
+	// Closed forbids properties the schema does not name: a misspelt key in a
+	// plugin's section is flagged rather than silently ignored, as collage
+	// ignores it.
+	Closed   bool     `json:"-"`
+	Items    *schema  `json:"items,omitempty"`
+	Enum     []string `json:"enum,omitempty"`
+	Pattern  string   `json:"pattern,omitempty"`
+	Examples []string `json:"examples,omitempty"`
+	Link     string   `json:"markdownDescription,omitempty"`
+}
+
+// MarshalJSON writes additionalProperties as a schema, as false for a closed
+// object, or not at all.
+func (s *schema) MarshalJSON() ([]byte, error) {
+	type plain schema
+	body, err := json.Marshal((*plain)(s))
+	if err != nil {
+		return nil, err
+	}
+	var extra []byte
+	switch {
+	case s.AdditionalProperties != nil:
+		if extra, err = json.Marshal(s.AdditionalProperties); err != nil {
+			return nil, err
+		}
+	case s.Closed:
+		extra = []byte("false")
+	default:
+		return body, nil
+	}
+	return append(append(body[:len(body)-1], []byte(`,"additionalProperties":`)...), append(extra, '}')...), nil
 }
 
 // pkg is one plugin package, parsed.
@@ -41,11 +67,17 @@ type pkg struct {
 	types  map[string]*ast.TypeSpec
 	consts map[string][]string // named string type -> its constant values
 	repo   string
+	// reads reports that the plugin decodes its configuration with host.Config:
+	// without it, an Options struct is Go-only, whatever its fields look like.
+	reads bool
 }
 
 func main() {
 	src := flag.String("src", filepath.Join(os.Getenv("HOME"), "Desktop"), "directory holding the collage-* plugin repos")
 	out := flag.String("out", "schemas/plugins-config.schema.json", "file to write")
+	manifests := flag.Bool("manifests", false, "also write each plugin repo's collage.json, from the catalog, the snippets and its schema")
+	catalogPath := flag.String("catalog", "../../data/catalog.json", "the catalog, for -manifests")
+	snippetsPath := flag.String("snippets", "../../snippets/html.json", "the template snippets, for -manifests")
 	flag.Parse()
 
 	dirs, err := filepath.Glob(filepath.Join(*src, "collage-*"))
@@ -69,6 +101,11 @@ func main() {
 			continue // not a plugin: the docs site, this repo, the framework
 		}
 		root.Properties[p.name] = p.schema()
+		if *manifests {
+			if err := writeManifest(dir, p, root.Properties[p.name], *catalogPath, *snippetsPath); err != nil {
+				fail(err)
+			}
+		}
 	}
 	body, err := json.MarshalIndent(struct {
 		Schema string `json:"$schema"`
@@ -102,6 +139,16 @@ func parse(dir string) (*pkg, error) {
 		}
 		p := &pkg{types: map[string]*ast.TypeSpec{}, consts: map[string][]string{}, repo: filepath.Base(dir)}
 		for _, file := range astPkg.Files {
+			ast.Inspect(file, func(n ast.Node) bool {
+				if call, ok := n.(*ast.CallExpr); ok {
+					if sel, ok := call.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "Config" && len(call.Args) == 1 {
+						if u, ok := call.Args[0].(*ast.UnaryExpr); ok && u.Op == token.AND {
+							p.reads = true
+						}
+					}
+				}
+				return true
+			})
 			if file.Doc != nil && p.doc == "" {
 				p.doc = firstSentence(file.Doc.Text())
 			}
@@ -162,9 +209,12 @@ func firstSentence(s string) string {
 
 // schema is the plugin's configuration object.
 func (p *pkg) schema() *schema {
-	out := &schema{Type: "object", Description: p.doc, Properties: map[string]*schema{}}
+	out := &schema{Type: "object", Description: p.doc, Properties: map[string]*schema{}, Closed: true}
 	out.Link = p.doc + "\n\n[" + p.repo + "](https://github.com/Elagoht/" + p.repo + ")"
 	for _, name := range []string{"Options", "Config"} {
+		if !p.reads {
+			break
+		}
 		if spec, ok := p.types[name]; ok {
 			if st, ok := spec.Type.(*ast.StructType); ok {
 				p.fields(st, out)
@@ -261,7 +311,7 @@ func (p *pkg) typeSchema(expr ast.Expr, depth int) *schema {
 		}
 		return &schema{}
 	case *ast.StructType:
-		obj := &schema{Type: "object", Properties: map[string]*schema{}}
+		obj := &schema{Type: "object", Properties: map[string]*schema{}, Closed: true}
 		p.fields(t, obj)
 		return obj
 	case *ast.Ident:
@@ -291,4 +341,114 @@ func (p *pkg) typeSchema(expr ast.Expr, depth int) *schema {
 		return s
 	}
 	return &schema{}
+}
+
+// catalogFile is the part of data/catalog.json a manifest is made from.
+type catalogFile struct {
+	Functions []struct {
+		Name      string `json:"name"`
+		Source    string `json:"source"`
+		Signature string `json:"signature"`
+		Insert    string `json:"insert"`
+		Doc       string `json:"doc"`
+		Repo      string `json:"repo"`
+	} `json:"functions"`
+	Attributes []struct {
+		Name  string  `json:"name"`
+		Value *string `json:"value"`
+		Doc   string  `json:"doc"`
+		Repo  string  `json:"repo"`
+	} `json:"attributes"`
+}
+
+type snippet struct {
+	Language    string   `json:"language"`
+	Prefix      string   `json:"prefix"`
+	Body        []string `json:"body"`
+	Description string   `json:"description,omitempty"`
+}
+
+type manifestFunc struct {
+	Name      string `json:"name"`
+	Signature string `json:"signature"`
+	Insert    string `json:"insert,omitempty"`
+	Doc       string `json:"doc"`
+}
+
+type manifestAttr struct {
+	Name  string  `json:"name"`
+	Value *string `json:"value"`
+	Doc   string  `json:"doc"`
+}
+
+type manifest struct {
+	Schema            string             `json:"$schema"`
+	Name              string             `json:"name"`
+	Description       string             `json:"description,omitempty"`
+	Repository        string             `json:"repository"`
+	TemplateFunctions []manifestFunc     `json:"templateFunctions,omitempty"`
+	Attributes        []manifestAttr     `json:"attributes,omitempty"`
+	Snippets          map[string]snippet `json:"snippets,omitempty"`
+	Config            *schema            `json:"config,omitempty"`
+}
+
+// writeManifest writes dir/collage.json: the plugin's template functions and
+// attributes from the catalog, its template snippets — those whose name begins
+// with its repository's — and its configuration's schema.
+func writeManifest(dir string, p *pkg, config *schema, catalogPath, snippetsPath string) error {
+	var cat catalogFile
+	if err := readJSON(catalogPath, &cat); err != nil {
+		return err
+	}
+	var snippets map[string]snippet
+	if err := readJSON(snippetsPath, &snippets); err != nil {
+		return err
+	}
+	m := manifest{
+		Schema:      "https://raw.githubusercontent.com/Elagoht/collage-snippets-highlighter/main/schemas/collage-plugin-manifest.schema.json",
+		Name:        p.name,
+		Description: p.doc,
+		Repository:  "https://github.com/Elagoht/" + p.repo,
+	}
+	for _, f := range cat.Functions {
+		if f.Repo == p.repo {
+			m.TemplateFunctions = append(m.TemplateFunctions, manifestFunc{Name: f.Name, Signature: f.Signature, Insert: f.Insert, Doc: f.Doc})
+		}
+	}
+	for _, a := range cat.Attributes {
+		if a.Repo == p.repo {
+			m.Attributes = append(m.Attributes, manifestAttr{Name: a.Name, Value: a.Value, Doc: a.Doc})
+		}
+	}
+	for name, sn := range snippets {
+		if strings.HasPrefix(name, p.repo) {
+			if m.Snippets == nil {
+				m.Snippets = map[string]snippet{}
+			}
+			sn.Language = "html"
+			m.Snippets[name] = sn
+		}
+	}
+	if len(config.Properties) > 0 {
+		c := *config
+		c.Link = ""
+		m.Config = &c
+	}
+	// Snippet bodies are markup: escaping <, > and & would make them unreadable.
+	var buf strings.Builder
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(m); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "collage.json"), []byte(buf.String()), 0o644)
+}
+
+func readJSON(path string, v any) error { // any: encoding/json's own parameter type
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(body, v)
 }

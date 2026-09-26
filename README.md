@@ -13,8 +13,16 @@ pages — for collage's own template functions and those of its
 - **Emmet, tag completion and formatting keep working**: templates stay HTML files.
 - **Completion and hover** inside `{{ … }}` for every template function, with its
   signature and documentation, and for collage-live's `data-collage-*` attributes.
+- **Names from your project**: page names in `{{pageURL "…"}}` and their
+  parameters, fragments in `{{fragmentURL "…" "…"}}`, the slots a template has in
+  `{{slot "…"}}`, mounted files in `{{asset "…"}}` — and a warning for a page or a
+  file that does not exist, and go-to-definition from a name to the Go code
+  declaring it.
+- **Every plugin you depend on**, published or not: its `collage.json` adds its
+  template functions, attributes, snippets and configuration schema.
 - **`plugins-config.json` validation**: completion, descriptions and a warning for
-  a misspelt key, for all thirty-four published plugins.
+  a misspelt key, for all thirty-four published plugins and any plugin with a
+  `collage.json`.
 
 ## Snippets
 
@@ -96,9 +104,53 @@ then Go's builtins, each inserting its arguments as placeholders; hovering one s
 its signature, what it does and a link to its documentation. In a tag it offers
 collage-live's `data-collage-*` attributes.
 
-By default this happens only in a collage project — a workspace whose `go.mod`
+By default this happens only in a collage project — a folder whose `go.mod`
 requires `github.com/Elagoht/collage`. The `collage.completions` setting makes it
 `always` or `never`. Snippets and highlighting are always on.
+
+| Setting | Default | |
+| --- | --- | --- |
+| `collage.completions` | `auto` | where completion and hover are offered |
+| `collage.inspect` | `true` | run `go run . collage-inspect` to learn the project |
+| `collage.diagnostics` | `warning` | how a name that does not exist is reported, or `off` |
+| `collage.goCommand` | `go` | the go command to run |
+
+## Names from your project
+
+The extension asks the application what it is made of: in every folder whose
+`go.mod` requires collage it runs `go run . collage-inspect` (collage v0.27.0 or
+later, which a scaffolded `main.go` answers), and again whenever a Go file is saved.
+The status bar shows what it learnt — `collage: 12 pages` — and a click refreshes it;
+the Collage output channel says why when it could not.
+
+With that it completes, in string arguments:
+
+| Where | What |
+| --- | --- |
+| `pageURL "…"`, `pageURLIn "tr" "…"` | pages and documents, then the route's parameter names |
+| `fragmentURL "…" "…"` | pages with fragment paths, then their fragments, then parameters |
+| `localeURL "…"` | the locales |
+| `slot "…"` | the slots of the fragment rendering this template |
+| `asset "…"`, `stylesheet "…"` | the files the mounts serve |
+
+It warns about a page, a fragment or a file that does not exist — not about a slot:
+a template calling `{{slot "x"}}` declares `x`, and one nothing fills renders empty.
+F12 on a page name opens the `NewPage("…")` that declares it; on a slot, the binding;
+on an asset, the file.
+
+Running the application's `main` builds the application without serving it. A
+program that connects to a database while it builds would do so here too; turn it
+off with `"collage.inspect": false`, and completion falls back to the functions it
+knows.
+
+## Plugins' collage.json
+
+A plugin module can describe itself in a `collage.json` at its root — the format is
+in collage's plugin guide, and `schemas/collage-plugin-manifest.schema.json` here
+validates it. The extension finds every one in the project's module graph
+(`go list -m -json all`) and offers its template functions with their
+documentation, its attributes and snippets, and adds its configuration to
+`plugins-config.json`'s schema. The published plugins ship one; so can yours.
 
 ## plugins-config.json
 
@@ -123,8 +175,9 @@ npm install
 npm test            # builds the grammar, compiles, and runs the grammar and catalog tests
 npm run test:integration  # runs the extension in a VS Code of its own and checks completion and hover
 npm run schema      # regenerates schemas/plugins-config.schema.json from ~/Desktop/collage-*
+                    # (-manifests also writes each plugin repo's collage.json)
 npm run package     # builds collage-snippets-highlighter-<version>.vsix
-code --install-extension collage-snippets-highlighter-0.1.0.vsix
+code --install-extension collage-snippets-highlighter-0.2.0.vsix
 ```
 
 The catalog tests read the collage and plugin sources from `~/Desktop` (or

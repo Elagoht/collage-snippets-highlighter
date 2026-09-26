@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/Elagoht/collage-snippets-highlighter/main/schemas/collage-plugin-manifest.schema.json",
+  "title": "collage plugin manifest",
+  "description": "A collage plugin's description of itself for editors: the template functions it adds, the attributes it reads, snippets, and the schema of its section of plugins-config.json. Lives at the plugin module's root as collage.json.",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "description": "The plugin's Name(): the key its configuration is found under in plugins-config.json.", "pattern": "^[^\\s]+$" },
+    "description": { "type": "string", "description": "What the plugin does, in a sentence." },
+    "repository": { "type": "string", "description": "Where the plugin's documentation lives.", "format": "uri" },
+    "templateFunctions": {
+      "type": "array",
+      "description": "The template functions the plugin adds with AddTemplateFunc or AddRenderFunc.",
+      "items": {
+        "type": "object",
+        "required": ["name", "signature", "doc"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+          "signature": { "type": "string", "description": "How it is called, as in a template: pageURL \"name\" [\"param\" value ...]" },
+          "insert": { "type": "string", "description": "What completion inserts, in VS Code snippet syntax. Default: the name." },
+          "doc": { "type": "string", "description": "What it does, in Markdown." }
+        }
+      }
+    },
+    "attributes": {
+      "type": "array",
+      "description": "HTML attributes the plugin reads, offered in tags.",
+      "items": {
+        "type": "object",
+        "required": ["name", "doc"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "value": { "type": ["string", "null"], "description": "The value completion inserts, in snippet syntax; null for a boolean attribute." },
+          "doc": { "type": "string" }
+        }
+      }
+    },
+    "snippets": {
+      "type": "object",
+      "description": "Snippets, by name, in VS Code's snippet format with the language they are for.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["language", "prefix", "body"],
+        "additionalProperties": false,
+        "properties": {
+          "language": { "enum": ["html", "go"] },
+          "prefix": { "type": "string" },
+          "body": { "type": "array", "items": { "type": "string" } },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "description": "The JSON Schema of the plugin's section of plugins-config.json."
+    }
+  }
+}

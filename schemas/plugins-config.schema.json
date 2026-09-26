@@ -1,6 +1,4 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://collage.furkanbaytekin.dev/schemas/plugins-config.json",
   "type": "object",
   "description": "Plugin configuration for a collage application, keyed by plugin name. Loaded with collage.LoadPluginConfig and passed as Config.PluginConfig.",
   "properties": {
@@ -35,7 +33,8 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin that writes one log line per request.\n\n[collage-accesslog](https://github.com/Elagoht/collage-accesslog)"
+      "markdownDescription": "A collage plugin that writes one log line per request.\n\n[collage-accesslog](https://github.com/Elagoht/collage-accesslog)",
+      "additionalProperties": false
     },
     "elagoht/analytics": {
       "type": "object",
@@ -63,7 +62,8 @@
               "type": "string",
               "description": "Script is the script's URL. Default \"https://gc.zgo.at/count.js\"."
             }
-          }
+          },
+          "additionalProperties": false
         },
         "googleAnalytics": {
           "type": "object",
@@ -73,7 +73,8 @@
               "type": "string",
               "description": "MeasurementID is the stream's id: \"G-XXXXXXXXXX\"."
             }
-          }
+          },
+          "additionalProperties": false
         },
         "loaderPath": {
           "type": "string",
@@ -90,7 +91,8 @@
               "type": "string",
               "description": "Script is the script's URL, for a self-hosted server or one of Plausible's script variants. Default \"https://plausible.io/js/script.js\"."
             }
-          }
+          },
+          "additionalProperties": false
         },
         "requireConsent": {
           "type": "boolean",
@@ -111,10 +113,12 @@
               "type": "string",
               "description": "WebsiteID is the site's id, a UUID."
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
-      "markdownDescription": "A collage plugin that adds an analytics snippet to every page's head.\n\n[collage-analytics](https://github.com/Elagoht/collage-analytics)"
+      "markdownDescription": "A collage plugin that adds an analytics snippet to every page's head.\n\n[collage-analytics](https://github.com/Elagoht/collage-analytics)",
+      "additionalProperties": false
     },
     "elagoht/basicauth": {
       "type": "object",
@@ -150,7 +154,8 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin that puts HTTP Basic authentication in front of a site: a staging deployment, a preview, a site not launched yet.\n\n[collage-basicauth](https://github.com/Elagoht/collage-basicauth)"
+      "markdownDescription": "A collage plugin that puts HTTP Basic authentication in front of a site: a staging deployment, a preview, a site not launched yet.\n\n[collage-basicauth](https://github.com/Elagoht/collage-basicauth)",
+      "additionalProperties": false
     },
     "elagoht/bundle": {
       "type": "object",
@@ -184,7 +189,8 @@
           "description": "Target is the language level the output must run on: \"es2018\", \"es2020\", \"esnext\". Default \"esnext\", which leaves the syntax as it was written."
         }
       },
-      "markdownDescription": "A collage plugin that bundles an application's JavaScript, TypeScript and CSS with esbuild, and serves the output under content-hashed names.\n\n[collage-bundle](https://github.com/Elagoht/collage-bundle)"
+      "markdownDescription": "A collage plugin that bundles an application's JavaScript, TypeScript and CSS with esbuild, and serves the output under content-hashed names.\n\n[collage-bundle](https://github.com/Elagoht/collage-bundle)",
+      "additionalProperties": false
     },
     "elagoht/cdnpurge": {
       "type": "object",
@@ -223,7 +229,8 @@
               "type": "string",
               "description": "ZoneID is the zone's identifier, on the zone's overview page. Required."
             }
-          }
+          },
+          "additionalProperties": false
         },
         "force": {
           "type": "boolean",
@@ -258,7 +265,8 @@
               "type": "string",
               "description": "URL receives the POST. Required."
             }
-          }
+          },
+          "additionalProperties": false
         },
         "window": {
           "type": "string",
@@ -270,7 +278,8 @@
           ]
         }
       },
-      "markdownDescription": "A collage plugin that purges a CDN's copies of the pages collage invalidates.\n\n[collage-cdnpurge](https://github.com/Elagoht/collage-cdnpurge)"
+      "markdownDescription": "A collage plugin that purges a CDN's copies of the pages collage invalidates.\n\n[collage-cdnpurge](https://github.com/Elagoht/collage-cdnpurge)",
+      "additionalProperties": false
     },
     "elagoht/compress": {
       "type": "object",
@@ -311,12 +320,14 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin that compresses responses with Brotli and gzip.\n\n[collage-compress](https://github.com/Elagoht/collage-compress)"
+      "markdownDescription": "A collage plugin that compresses responses with Brotli and gzip.\n\n[collage-compress](https://github.com/Elagoht/collage-compress)",
+      "additionalProperties": false
     },
     "elagoht/devtoolbar": {
       "type": "object",
       "description": "A collage plugin that shows a small panel at the bottom of every page in development. It takes no configuration from JSON: it is configured in Go.",
-      "markdownDescription": "A collage plugin that shows a small panel at the bottom of every page in development.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)\n\nIt takes no configuration from JSON: it is configured in Go."
+      "markdownDescription": "A collage plugin that shows a small panel at the bottom of every page in development.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)\n\nIt takes no configuration from JSON: it is configured in Go.",
+      "additionalProperties": false
     },
     "elagoht/favicon": {
       "type": "object",
@@ -357,12 +368,14 @@
           "description": "ThemeColor colours the browser's interface around the site, in the head's \u003cmeta name=\"theme-color\"\u003e and the manifest. BackgroundColor is the splash screen's colour while an installed app starts, and what the Apple touch icon's transparent pixels are filled with — iOS fills them with black otherwise. Each is a CSS hex colour, \"#0f172a\", or a colour name; empty leaves it out."
         }
       },
-      "markdownDescription": "A collage plugin that makes a site's icons from one source image and links them from every page's head.\n\n[collage-favicon](https://github.com/Elagoht/collage-favicon)"
+      "markdownDescription": "A collage plugin that makes a site's icons from one source image and links them from every page's head.\n\n[collage-favicon](https://github.com/Elagoht/collage-favicon)",
+      "additionalProperties": false
     },
     "elagoht/feed": {
       "type": "object",
       "description": "A collage plugin that serves RSS 2.0 and Atom 1.0 feeds. It takes no configuration from JSON: it is configured in Go.",
-      "markdownDescription": "A collage plugin that serves RSS 2.0 and Atom 1.0 feeds.\n\n[collage-feed](https://github.com/Elagoht/collage-feed)\n\nIt takes no configuration from JSON: it is configured in Go."
+      "markdownDescription": "A collage plugin that serves RSS 2.0 and Atom 1.0 feeds.\n\n[collage-feed](https://github.com/Elagoht/collage-feed)\n\nIt takes no configuration from JSON: it is configured in Go.",
+      "additionalProperties": false
     },
     "elagoht/flash": {
       "type": "object",
@@ -381,7 +394,8 @@
           "description": "MaxAge is how many seconds an unshown message waits before it is dropped. Default 300."
         }
       },
-      "markdownDescription": "A collage plugin for flash messages: a message an action sets before it redirects, shown once by the page it redirects to.\n\n[collage-flash](https://github.com/Elagoht/collage-flash)"
+      "markdownDescription": "A collage plugin for flash messages: a message an action sets before it redirects, shown once by the page it redirects to.\n\n[collage-flash](https://github.com/Elagoht/collage-flash)",
+      "additionalProperties": false
     },
     "elagoht/highlight": {
       "type": "object",
@@ -403,7 +417,8 @@
           "description": "NoBackground leaves the block's background colour to the site's own stylesheet, keeping the theme's text colours."
         }
       },
-      "markdownDescription": "A collage plugin that colours code with chroma.\n\n[collage-highlight](https://github.com/Elagoht/collage-highlight)"
+      "markdownDescription": "A collage plugin that colours code with chroma.\n\n[collage-highlight](https://github.com/Elagoht/collage-highlight)",
+      "additionalProperties": false
     },
     "elagoht/honeypot": {
       "type": "object",
@@ -448,7 +463,8 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin that stops form spam without a CAPTCHA: a decoy field people never see, and a signed timestamp that says how long the form was open.\n\n[collage-honeypot](https://github.com/Elagoht/collage-honeypot)"
+      "markdownDescription": "A collage plugin that stops form spam without a CAPTCHA: a decoy field people never see, and a signed timestamp that says how long the form was open.\n\n[collage-honeypot](https://github.com/Elagoht/collage-honeypot)",
+      "additionalProperties": false
     },
     "elagoht/htmlcheck": {
       "type": "object",
@@ -489,7 +505,8 @@
           "description": "TitleMax and DescriptionMax are the lengths, in characters, past which a search engine cuts a title or a description short. Default 60 and 160."
         }
       },
-      "markdownDescription": "A collage plugin that checks the HTML a site renders and reports what it finds as warnings and errors.\n\n[collage-htmlcheck](https://github.com/Elagoht/collage-htmlcheck)"
+      "markdownDescription": "A collage plugin that checks the HTML a site renders and reports what it finds as warnings and errors.\n\n[collage-htmlcheck](https://github.com/Elagoht/collage-htmlcheck)",
+      "additionalProperties": false
     },
     "elagoht/i18n": {
       "type": "object",
@@ -500,7 +517,8 @@
           "description": "Dir is the directory of the catalogs within FS. Default \"locales\"."
         }
       },
-      "markdownDescription": "A collage plugin for translations.\n\n[collage-i18n](https://github.com/Elagoht/collage-i18n)"
+      "markdownDescription": "A collage plugin for translations.\n\n[collage-i18n](https://github.com/Elagoht/collage-i18n)",
+      "additionalProperties": false
     },
     "elagoht/indexnow": {
       "type": "object",
@@ -542,7 +560,8 @@
           "description": "WindowString is Window as configuration carries it: \"10s\", \"1m\"."
         }
       },
-      "markdownDescription": "A collage plugin that tells search engines which URLs changed, through the IndexNow protocol: Bing, Yandex, Seznam, Naver and the others that share what one of them is told.\n\n[collage-indexnow](https://github.com/Elagoht/collage-indexnow)"
+      "markdownDescription": "A collage plugin that tells search engines which URLs changed, through the IndexNow protocol: Bing, Yandex, Seznam, Naver and the others that share what one of them is told.\n\n[collage-indexnow](https://github.com/Elagoht/collage-indexnow)",
+      "additionalProperties": false
     },
     "elagoht/jsonld": {
       "type": "object",
@@ -564,7 +583,8 @@
           "type": "string"
         }
       },
-      "markdownDescription": "A collage plugin that emits schema.org structured data into the document head.\n\n[collage-jsonld](https://github.com/Elagoht/collage-jsonld)"
+      "markdownDescription": "A collage plugin that emits schema.org structured data into the document head.\n\n[collage-jsonld](https://github.com/Elagoht/collage-jsonld)",
+      "additionalProperties": false
     },
     "elagoht/live": {
       "type": "object",
@@ -601,7 +621,8 @@
           "description": "Prefix is where the client and the stream are served: the client at \u003cprefix\u003eclient/client.js, the stream at \u003cprefix\u003estream/. It begins and ends with a slash. Default \"/_live/\"."
         }
       },
-      "markdownDescription": "A collage plugin that keeps parts of a page current in the browser: it serves a small client script that refreshes the fragments a page opened with WithFragmentPath, on an interval or when the server pushes a change over an event stream.\n\n[collage-live](https://github.com/Elagoht/collage-live)"
+      "markdownDescription": "A collage plugin that keeps parts of a page current in the browser: it serves a small client script that refreshes the fragments a page opened with WithFragmentPath, on an interval or when the server pushes a change over an event stream.\n\n[collage-live](https://github.com/Elagoht/collage-live)",
+      "additionalProperties": false
     },
     "elagoht/markdown": {
       "type": "object",
@@ -627,7 +648,8 @@
           "description": "Unsafe lets raw HTML written in the Markdown through to the page. Off, it is left out, so a document cannot put a script on the site."
         }
       },
-      "markdownDescription": "A collage plugin that makes a directory of Markdown files page data.\n\n[collage-markdown](https://github.com/Elagoht/collage-markdown)"
+      "markdownDescription": "A collage plugin that makes a directory of Markdown files page data.\n\n[collage-markdown](https://github.com/Elagoht/collage-markdown)",
+      "additionalProperties": false
     },
     "elagoht/meta": {
       "type": "object",
@@ -665,7 +687,8 @@
           "description": "TwitterSite is the site's own account, \"@example\", sent as twitter:site."
         }
       },
-      "markdownDescription": "A collage plugin that writes the tags a page is shared and indexed by into its head: Open Graph, Twitter cards, the canonical URL, the meta description, and the page's translations.\n\n[collage-meta](https://github.com/Elagoht/collage-meta)"
+      "markdownDescription": "A collage plugin that writes the tags a page is shared and indexed by into its head: Open Graph, Twitter cards, the canonical URL, the meta description, and the page's translations.\n\n[collage-meta](https://github.com/Elagoht/collage-meta)",
+      "additionalProperties": false
     },
     "elagoht/minimizer": {
       "type": "object",
@@ -688,7 +711,8 @@
           "description": "JSON minifies documents and mounted files served as JSON. It is exact: encoding/json knows the whole grammar."
         }
       },
-      "markdownDescription": "A collage plugin that strips whitespace and comments from what an application serves: rendered pages, documents, and mounted assets.\n\n[collage-minimizer](https://github.com/Elagoht/collage-minimizer)"
+      "markdownDescription": "A collage plugin that strips whitespace and comments from what an application serves: rendered pages, documents, and mounted assets.\n\n[collage-minimizer](https://github.com/Elagoht/collage-minimizer)",
+      "additionalProperties": false
     },
     "elagoht/offline": {
       "type": "object",
@@ -728,7 +752,8 @@
           "description": "Version names the application's build in the cache version. Empty uses collage's Host.BuildID; see the README for when to set it yourself."
         }
       },
-      "markdownDescription": "A collage plugin that serves a service worker, so the pages a visitor has read open again without a network.\n\n[collage-offline](https://github.com/Elagoht/collage-offline)"
+      "markdownDescription": "A collage plugin that serves a service worker, so the pages a visitor has read open again without a network.\n\n[collage-offline](https://github.com/Elagoht/collage-offline)",
+      "additionalProperties": false
     },
     "elagoht/opti-image": {
       "type": "object",
@@ -746,7 +771,8 @@
               "scheme": {
                 "type": "string"
               }
-            }
+            },
+            "additionalProperties": false
           }
         },
         "alphaThreshold": {
@@ -799,7 +825,8 @@
           "description": "WebP says which images are re-encoded to WebP: none, all, or — \"auto\" — only those that would otherwise be lossless. See WebPMode."
         }
       },
-      "markdownDescription": "A collage plugin that rewrites images declaring a width and a height to resized copies it serves itself.\n\n[collage-opti-image](https://github.com/Elagoht/collage-opti-image)"
+      "markdownDescription": "A collage plugin that rewrites images declaring a width and a height to resized copies it serves itself.\n\n[collage-opti-image](https://github.com/Elagoht/collage-opti-image)",
+      "additionalProperties": false
     },
     "elagoht/otel": {
       "type": "object",
@@ -813,7 +840,8 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin for OpenTelemetry tracing.\n\n[collage-otel](https://github.com/Elagoht/collage-otel)"
+      "markdownDescription": "A collage plugin for OpenTelemetry tracing.\n\n[collage-otel](https://github.com/Elagoht/collage-otel)",
+      "additionalProperties": false
     },
     "elagoht/prometheus": {
       "type": "object",
@@ -828,7 +856,8 @@
           "description": "Token, when set, is required as \"Authorization: Bearer \u003ctoken\u003e\" on the metrics path. Without it anyone who can reach the site can read its metrics — page names, error rates, traffic."
         }
       },
-      "markdownDescription": "A collage plugin that exports the framework's metrics to Prometheus, and serves them at /metrics.\n\n[collage-prometheus](https://github.com/Elagoht/collage-prometheus)"
+      "markdownDescription": "A collage plugin that exports the framework's metrics to Prometheus, and serves them at /metrics.\n\n[collage-prometheus](https://github.com/Elagoht/collage-prometheus)",
+      "additionalProperties": false
     },
     "elagoht/ratelimit": {
       "type": "object",
@@ -863,7 +892,8 @@
                 "type": "number",
                 "description": "Rate is how many requests a second the bucket refills by, and so the rate a client can keep up: 0.1 is one request every ten seconds."
               }
-            }
+            },
+            "additionalProperties": false
           }
         },
         "skip": {
@@ -885,7 +915,8 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin that limits how fast one client can hit the site: a token bucket per client, per rule, answered with 429 once it is empty.\n\n[collage-ratelimit](https://github.com/Elagoht/collage-ratelimit)"
+      "markdownDescription": "A collage plugin that limits how fast one client can hit the site: a token bucket per client, per rule, answered with 429 once it is empty.\n\n[collage-ratelimit](https://github.com/Elagoht/collage-ratelimit)",
+      "additionalProperties": false
     },
     "elagoht/redirects": {
       "type": "object",
@@ -917,11 +948,13 @@
                 "type": "string",
                 "description": "To is where it went: a path on the site or an absolute URL. For a prefix, \":splat\" in it is what the \"*\" matched. \"-\" for a rule that is gone."
               }
-            }
+            },
+            "additionalProperties": false
           }
         }
       },
-      "markdownDescription": "A collage plugin for redirects kept in a file rather than in code: what a site migration leaves behind, hundreds of old addresses and where each one went.\n\n[collage-redirects](https://github.com/Elagoht/collage-redirects)"
+      "markdownDescription": "A collage plugin for redirects kept in a file rather than in code: what a site migration leaves behind, hundreds of old addresses and where each one went.\n\n[collage-redirects](https://github.com/Elagoht/collage-redirects)",
+      "additionalProperties": false
     },
     "elagoht/robots": {
       "type": "object",
@@ -960,7 +993,8 @@
                   "type": "string"
                 }
               }
-            }
+            },
+            "additionalProperties": false
           }
         },
         "sitemaps": {
@@ -971,7 +1005,8 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin that serves /robots.txt.\n\n[collage-robots](https://github.com/Elagoht/collage-robots)"
+      "markdownDescription": "A collage plugin that serves /robots.txt.\n\n[collage-robots](https://github.com/Elagoht/collage-robots)",
+      "additionalProperties": false
     },
     "elagoht/search": {
       "type": "object",
@@ -1013,7 +1048,8 @@
                 "type": "string",
                 "description": "Unavailable is shown where there is no index: on a server rather than on the exported site. Default \"Search is available on the exported site.\""
               }
-            }
+            },
+            "additionalProperties": false
           }
         },
         "maxText": {
@@ -1021,7 +1057,8 @@
           "description": "MaxText is how many characters of a page's text the index keeps. Default 5000: enough to find a page by what it says, without an index the size of the site."
         }
       },
-      "markdownDescription": "A collage plugin for search on a static site.\n\n[collage-search](https://github.com/Elagoht/collage-search)"
+      "markdownDescription": "A collage plugin for search on a static site.\n\n[collage-search](https://github.com/Elagoht/collage-search)",
+      "additionalProperties": false
     },
     "elagoht/secure": {
       "type": "object",
@@ -1067,7 +1104,8 @@
           "description": "ReferrerPolicy is Referrer-Policy. Default \"strict-origin-when-cross-origin\"."
         }
       },
-      "markdownDescription": "A collage plugin that sends the security headers a site should, and a Content-Security-Policy with per-request nonces.\n\n[collage-secure](https://github.com/Elagoht/collage-secure)"
+      "markdownDescription": "A collage plugin that sends the security headers a site should, and a Content-Security-Policy with per-request nonces.\n\n[collage-secure](https://github.com/Elagoht/collage-secure)",
+      "additionalProperties": false
     },
     "elagoht/session": {
       "type": "object",
@@ -1117,7 +1155,8 @@
           "description": "Secure sends the cookie over HTTPS only, always. Without it the cookie is Secure when the request arrived over TLS, or through a proxy that says so with X-Forwarded-Proto: https."
         }
       },
-      "markdownDescription": "A collage plugin for a session kept in a cookie: a small map of strings the site signs, and can encrypt, with no database behind it.\n\n[collage-session](https://github.com/Elagoht/collage-session)"
+      "markdownDescription": "A collage plugin for a session kept in a cookie: a small map of strings the site signs, and can encrypt, with no database behind it.\n\n[collage-session](https://github.com/Elagoht/collage-session)",
+      "additionalProperties": false
     },
     "elagoht/sitemap": {
       "type": "object",
@@ -1143,7 +1182,8 @@
           "description": "Path is where the sitemap is served. Default \"/sitemap.xml\". The numbered files of an index are served under it without the extension: \"/sitemap/1.xml\", \"/sitemap/2.xml\"."
         }
       },
-      "markdownDescription": "A collage plugin that serves /sitemap.xml from the pages the application registered.\n\n[collage-sitemap](https://github.com/Elagoht/collage-sitemap)"
+      "markdownDescription": "A collage plugin that serves /sitemap.xml from the pages the application registered.\n\n[collage-sitemap](https://github.com/Elagoht/collage-sitemap)",
+      "additionalProperties": false
     },
     "elagoht/toc": {
       "type": "object",
@@ -1167,7 +1207,8 @@
                 "type": "string",
                 "description": "ReadingTime is the reading time, \"{n}\" standing for the minutes. Default \"{n} min read\"."
               }
-            }
+            },
+            "additionalProperties": false
           }
         },
         "maxLevel": {
@@ -1182,7 +1223,8 @@
           "description": "WPM is the reading speed, in words a minute. Default 225."
         }
       },
-      "markdownDescription": "A collage plugin that gives a page's headings ids, and puts a table of contents and a reading time where the templates ask for them.\n\n[collage-toc](https://github.com/Elagoht/collage-toc)"
+      "markdownDescription": "A collage plugin that gives a page's headings ids, and puts a table of contents and a reading time where the templates ask for them.\n\n[collage-toc](https://github.com/Elagoht/collage-toc)",
+      "additionalProperties": false
     },
     "elagoht/validate": {
       "type": "object",
@@ -1213,29 +1255,14 @@
           }
         }
       },
-      "markdownDescription": "A collage plugin for validating a form an action receives.\n\n[collage-validate](https://github.com/Elagoht/collage-validate)"
+      "markdownDescription": "A collage plugin for validating a form an action receives.\n\n[collage-validate](https://github.com/Elagoht/collage-validate)",
+      "additionalProperties": false
     },
     "elagoht/websocket": {
       "type": "object",
-      "description": "A collage plugin that carries collage-live's pushed fragments over a WebSocket instead of an event stream.",
-      "properties": {
-        "OriginPatterns": {
-          "type": "array",
-          "description": "OriginPatterns are the hosts, besides the site's own, whose pages may connect — as github.com/coder/websocket matches them. A connection carries the reader's cookies, so a page on another origin must not be able to open one on the reader's behalf; the default allows only the site itself.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "Path": {
-          "type": "string",
-          "description": "Path is where the WebSocket is served. It begins and ends with a slash. Default \"/_live/ws/\"."
-        },
-        "Ping": {
-          "type": "integer",
-          "description": "Ping is how often an idle connection is pinged, so a proxy that closes quiet connections leaves it open and a peer that vanished is noticed. Default 25s."
-        }
-      },
-      "markdownDescription": "A collage plugin that carries collage-live's pushed fragments over a WebSocket instead of an event stream.\n\n[collage-websocket](https://github.com/Elagoht/collage-websocket)"
+      "description": "A collage plugin that carries collage-live's pushed fragments over a WebSocket instead of an event stream. It takes no configuration from JSON: it is configured in Go.",
+      "markdownDescription": "A collage plugin that carries collage-live's pushed fragments over a WebSocket instead of an event stream.\n\n[collage-websocket](https://github.com/Elagoht/collage-websocket)\n\nIt takes no configuration from JSON: it is configured in Go.",
+      "additionalProperties": false
     }
   },
   "additionalProperties": {

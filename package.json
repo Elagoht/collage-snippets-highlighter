@@ -2,7 +2,7 @@
   "name": "collage-snippets-highlighter",
   "displayName": "Collage Snippets & Highlighter",
   "description": "Snippets, template highlighting, completion and plugins-config.json validation for collage, the Go framework for server-rendered pages — its template functions and those of its published plugins.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "elagoht",
   "license": "MIT",
   "icon": "images/icon.png",
@@ -28,7 +28,9 @@
     "snippets"
   ],
   "activationEvents": [
-    "onLanguage:html"
+    "onLanguage:html",
+    "onLanguage:json",
+    "workspaceContains:**/go.mod"
   ],
   "main": "./out/src/extension.js",
   "contributes": {
@@ -55,7 +57,11 @@
     "jsonValidation": [
       {
         "fileMatch": "plugins-config.json",
-        "url": "./schemas/plugins-config.schema.json"
+        "url": "collage-schema://collage/plugins-config.json"
+      },
+      {
+        "fileMatch": "collage.json",
+        "url": "./schemas/collage-plugin-manifest.schema.json"
       }
     ],
     "configuration": {
@@ -74,10 +80,43 @@
             "Never."
           ],
           "default": "auto",
-          "description": "Where to offer collage's template functions and data-collage-* attributes, and show their documentation on hover."
+          "description": "Where to offer collage's template functions, names in their arguments and data-collage-* attributes, and show their documentation on hover."
+        },
+        "collage.inspect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run `go run . collage-inspect` in each collage project to learn its pages, fragments, slots and mounted files, for completion, diagnostics and go-to-definition. It runs the application's main, which builds the application without serving it."
+        },
+        "collage.goCommand": {
+          "type": "string",
+          "default": "go",
+          "description": "The go command the extension runs."
+        },
+        "collage.diagnostics": {
+          "type": "string",
+          "enum": [
+            "off",
+            "information",
+            "warning",
+            "error"
+          ],
+          "default": "warning",
+          "description": "How a name the application does not have — a page in pageURL, a slot in slot, a file in asset — is reported."
         }
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "collage.refresh",
+        "title": "Refresh Project",
+        "category": "Collage"
+      },
+      {
+        "command": "collage.showOutput",
+        "title": "Show Output",
+        "category": "Collage"
+      }
+    ]
   },
   "scripts": {
     "build": "node scripts/build-grammar.mjs && tsc -p .",

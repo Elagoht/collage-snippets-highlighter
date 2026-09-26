@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0
+
+- Names from the project, learnt from `go run . collage-inspect` (collage
+  v0.27.0): pages and their parameters in `pageURL`, fragments in `fragmentURL`,
+  slots in `slot`, mounted files in `asset` and `stylesheet`, locales in
+  `localeURL`.
+- Warnings for a page, fragment or file that does not exist
+  (`collage.diagnostics`).
+- Go to definition from a page, fragment or slot name to the Go code declaring
+  it, and from an asset to its file.
+- Plugins' `collage.json` manifests, found through the module graph: their
+  template functions, attributes, snippets, and configuration in
+  `plugins-config.json`'s schema — for any plugin, published or not.
+- A misspelt key under a published plugin in `plugins-config.json` is flagged; it
+  was accepted before.
+- A status bar item and the Collage output channel say what the extension knows.
+- Settings: `collage.inspect`, `collage.goCommand`, `collage.diagnostics`.
+
 ## 0.1.0
 
 - Snippets for Go and for collage templates, collage's plugins included.

@@ -2,11 +2,14 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Collage Inline Template",
   "scopeName": "collage.inline.injection",
-  "comment": "Colours the template of collage.NewInlineFragment(name, `...`) as HTML. The name and the opening backtick must be on the call's line. The template scope names text.html.basic too, which is what lets collage.template.injection colour its {{...}} actions.",
+  "comment": "Colours an inline template as HTML: the template of collage.NewInlineFragment(name, `...`), and the raw string of a const or var declared as collage.InlineHTML. The name, or the declaration up to the opening backtick, must be on one line. A declaration's rules start where Go's own const and var rules do, right after the keyword or at the line's start in a group, so that they win. The template scope names text.html.basic too, which is what lets collage.template.injection colour its {{...}} actions.",
   "injectionSelector": "L:source.go -comment -string",
   "patterns": [
     {
       "include": "#inline-fragment"
+    },
+    {
+      "include": "#inline-html"
     }
   ],
   "repository": {
@@ -39,6 +42,152 @@
       "patterns": [
         {
           "include": "text.html.basic"
+        }
+      ]
+    },
+    "inline-html": {
+      "comment": "const x collage.InlineHTML = `...`, var x collage.InlineHTML = `...`, and a line of a const ( ... ) or var ( ... ) group.",
+      "patterns": [
+        {
+          "begin": "(?<=\\bconst\\b)\\s*(\\b\\w+(?:\\s*,\\s*\\w+)*)\\s+((?:\\w+\\s*\\.\\s*)?InlineHTML)\\s*(=)\\s*(`)",
+          "beginCaptures": {
+            "1": {
+              "patterns": [
+                {
+                  "match": ",",
+                  "name": "punctuation.other.comma.go"
+                },
+                {
+                  "match": "\\w+",
+                  "name": "variable.other.constant.go"
+                }
+              ]
+            },
+            "2": {
+              "patterns": [
+                {
+                  "match": "\\.",
+                  "name": "punctuation.other.period.go"
+                },
+                {
+                  "match": "\\w+",
+                  "name": "entity.name.type.go"
+                }
+              ]
+            },
+            "3": {
+              "name": "keyword.operator.assignment.go"
+            },
+            "4": {
+              "name": "string.quoted.raw.go punctuation.definition.string.begin.go"
+            }
+          },
+          "end": "`",
+          "endCaptures": {
+            "0": {
+              "name": "string.quoted.raw.go punctuation.definition.string.end.go"
+            }
+          },
+          "contentName": "meta.embedded.block.html text.html.basic",
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        },
+        {
+          "begin": "(?<=\\bvar\\b)\\s*(\\b\\w+(?:\\s*,\\s*\\w+)*)\\s+((?:\\w+\\s*\\.\\s*)?InlineHTML)\\s*(=)\\s*(`)",
+          "beginCaptures": {
+            "1": {
+              "patterns": [
+                {
+                  "match": ",",
+                  "name": "punctuation.other.comma.go"
+                },
+                {
+                  "match": "\\w+",
+                  "name": "variable.other.assignment.go"
+                }
+              ]
+            },
+            "2": {
+              "patterns": [
+                {
+                  "match": "\\.",
+                  "name": "punctuation.other.period.go"
+                },
+                {
+                  "match": "\\w+",
+                  "name": "entity.name.type.go"
+                }
+              ]
+            },
+            "3": {
+              "name": "keyword.operator.assignment.go"
+            },
+            "4": {
+              "name": "string.quoted.raw.go punctuation.definition.string.begin.go"
+            }
+          },
+          "end": "`",
+          "endCaptures": {
+            "0": {
+              "name": "string.quoted.raw.go punctuation.definition.string.end.go"
+            }
+          },
+          "contentName": "meta.embedded.block.html text.html.basic",
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        },
+        {
+          "begin": "^\\s*(\\b\\w+(?:\\s*,\\s*\\w+)*)\\s+((?:\\w+\\s*\\.\\s*)?InlineHTML)\\s*(=)\\s*(`)",
+          "beginCaptures": {
+            "1": {
+              "patterns": [
+                {
+                  "match": ",",
+                  "name": "punctuation.other.comma.go"
+                },
+                {
+                  "match": "\\w+",
+                  "name": "variable.other.constant.go"
+                }
+              ]
+            },
+            "2": {
+              "patterns": [
+                {
+                  "match": "\\.",
+                  "name": "punctuation.other.period.go"
+                },
+                {
+                  "match": "\\w+",
+                  "name": "entity.name.type.go"
+                }
+              ]
+            },
+            "3": {
+              "name": "keyword.operator.assignment.go"
+            },
+            "4": {
+              "name": "string.quoted.raw.go punctuation.definition.string.begin.go"
+            }
+          },
+          "end": "`",
+          "endCaptures": {
+            "0": {
+              "name": "string.quoted.raw.go punctuation.definition.string.end.go"
+            }
+          },
+          "contentName": "meta.embedded.block.html text.html.basic",
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
         }
       ]
     }

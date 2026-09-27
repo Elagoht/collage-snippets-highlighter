@@ -95,8 +95,17 @@ templates, are coloured as Go templates too.
 
 In Go, the template of an inline fragment is coloured the same way: the Go string
 after `collage.NewInlineFragment("name", ` is HTML, with its `{{ … }}` actions in
-collage's colours. The name and the opening backtick must be on the call's line,
-as the snippets write them; other strings stay Go strings.
+collage's colours. So is the string of a constant or variable declared as
+`collage.InlineHTML` (collage v0.30.0), which holds a template apart from its call:
+
+```go
+const loginForm collage.InlineHTML = `
+  <form method="post">{{csrfToken}}</form>`
+```
+
+The name, or the declaration, and the opening backtick must be on one line, as the
+snippets write them; other strings stay Go strings. Snippets and completions of
+template functions work in HTML files only, not inside these strings.
 
 Your theme colours the scopes; to give collage's functions a colour of their own:
 

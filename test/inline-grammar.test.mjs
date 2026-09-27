@@ -16,10 +16,15 @@ const inline = read("collage-inline.tmLanguage.json");
 const template = read("collage-template.tmLanguage.json");
 
 // Stand-ins for VS Code's Go and HTML grammars: Go's raw string is what the
-// template would otherwise be coloured as, and a tag is enough of HTML.
+// template would otherwise be coloured as, and a tag is enough of HTML. Like the
+// real grammar, a const or var declaration is one match from right after the
+// keyword up to its =, which an injection starting later could not break into.
 const go = {
   scopeName: "source.go",
   patterns: [
+    { name: "keyword.go", match: "\\b(?:const|var)\\b" },
+    { name: "meta.declaration.go", match: "(?<=\\bconst\\b|\\bvar\\b)\\s*\\w+\\s*[\\w.]*\\s*=?" },
+    { name: "meta.declaration.go", match: "^\\s*\\w+\\s+[\\w.]+\\s*=" },
     { name: "string.quoted.raw.go", begin: "`", end: "`" },
     { name: "string.quoted.double.go", begin: "\"", end: "\"" },
     { name: "variable.other.go", match: "\\b[A-Za-z_]\\w*\\b" },
@@ -83,5 +88,31 @@ test("other raw strings stay Go strings", () => {
 
 test("a file fragment's path is not HTML", () => {
   const tokens = tokenize(["collage.NewFragment(\"x\", \"pages/x.html\")"]);
+  assert.ok(!tokens.some(([, s]) => s.includes("meta.embedded.block.html")));
+});
+
+test("a const declared as InlineHTML is HTML, across lines", () => {
+  const tokens = tokenize([
+    "const loginForm collage.InlineHTML = `",
+    "  <form>{{csrfToken}}</form>",
+    "`",
+    "var x = 1",
+  ]);
+  assert.ok(scopes(tokens, "<form").includes("meta.embedded.block.html"));
+  assert.ok(scopes(tokens, "csrfToken").includes("support.function.collage.core"));
+  assert.ok(scopes(tokens, "loginForm").includes("variable.other.constant.go"));
+  assert.ok(scopes(tokens, "InlineHTML").includes("entity.name.type.go"));
+  assert.ok(!tokens.some(([t, s]) => t.includes("x = 1") && s.includes("meta.embedded.block.html")), "Go resumes after the closing backtick");
+});
+
+test("a var, and a line of a const group, declared as InlineHTML", () => {
+  for (const line of ["var row InlineHTML = `<p>{{.T}}</p>`", "\trow collage.InlineHTML = `<p>{{.T}}</p>`"]) {
+    const tokens = tokenize([line]);
+    assert.ok(scopes(tokens, "<p").includes("meta.embedded.block.html"), line);
+  }
+});
+
+test("a raw string declared without InlineHTML stays a Go string", () => {
+  const tokens = tokenize(["const q string = `<p>not a template</p>`"]);
   assert.ok(!tokens.some(([, s]) => s.includes("meta.embedded.block.html")));
 });

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- The string of a `const` or `var` declared as `collage.InlineHTML` (collage
+  v0.30.0) is coloured as HTML, with collage's template actions in it.
+
 ## 0.3.0
 
 - Function snippets — `cpagef`, `cfragf`, `cinlinef`, `clayoutf`, `cguardf` —

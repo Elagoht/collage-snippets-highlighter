@@ -70,6 +70,12 @@ writeFileSync(join(project, "templates/pages/post.html"), [
   "",
 ].join("\n"));
 writeFileSync(join(project, "static/app.css"), "body{}\n");
+// Go files for the function snippets: an empty one beside a file that names its
+// package, and an empty one in a directory with nothing else in it.
+for (const dir of ["components", "auth-layout"]) mkdirSync(join(project, dir), { recursive: true });
+writeFileSync(join(project, "components/card.go"), "// Package components is the site's parts.\npackage components\n");
+writeFileSync(join(project, "components/new.go"), "");
+writeFileSync(join(project, "auth-layout/new.go"), "");
 writeFileSync(join(project, "plugins-config.json"), `{ "elagoht/flash": { "cookiee": "x" } }\n`);
 execFileSync("go", ["mod", "tidy"], { cwd: project, stdio: "inherit" });
 

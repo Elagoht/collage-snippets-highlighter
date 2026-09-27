@@ -12,6 +12,9 @@ import staticSchemaJSON from "../schemas/plugins-config.schema.json";
 import { Projects, type Project, type Manifest } from "./project";
 import { allCalls, stringArgAt } from "./template";
 import { namesFor, unknownName } from "./names";
+import { functionSnippets, headerEdits, packageName } from "./gosnippets";
+import * as fs from "fs";
+import * as path from "path";
 
 interface TemplateFunction {
   name: string;
@@ -50,6 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
     diagnostics,
     vscode.languages.registerCompletionItemProvider("html", new Completion(projects), '"', "{", " ", "(", "|", "-", "/"),
     vscode.languages.registerCompletionItemProvider("go", new ManifestSnippets(projects, "go")),
+    vscode.languages.registerCompletionItemProvider("go", new FunctionSnippets(projects)),
     vscode.languages.registerHoverProvider("html", new Hover(projects)),
     vscode.languages.registerDefinitionProvider("html", new Definition(projects)),
     vscode.workspace.registerTextDocumentContentProvider("collage-schema", schema),
@@ -224,6 +228,45 @@ class ManifestSnippets implements vscode.CompletionItemProvider {
     const { enabled, project } = await projectFor(this.projects, doc);
     return enabled ? manifestSnippetItems(project, this.language) : undefined;
   }
+}
+
+/** The snippets that write a whole function, offered with what the file needs
+ * above them — its package clause when it has none, and the imports it lacks —
+ * so the function compiles where it lands. */
+class FunctionSnippets implements vscode.CompletionItemProvider {
+  constructor(private readonly projects: Projects) {}
+
+  async provideCompletionItems(doc: vscode.TextDocument): Promise<vscode.CompletionItem[] | undefined> {
+    const { enabled } = await projectFor(this.projects, doc);
+    if (!enabled) return undefined;
+    const text = doc.getText();
+    const pkg = packageFor(doc);
+    return functionSnippets.map((s) => {
+      const item = new vscode.CompletionItem({ label: s.prefix, description: "collage" }, vscode.CompletionItemKind.Snippet);
+      item.insertText = new vscode.SnippetString(s.body.join("\n"));
+      item.documentation = new vscode.MarkdownString(s.description);
+      item.additionalTextEdits = headerEdits(text, pkg, s.imports).map((e) => vscode.TextEdit.insert(doc.positionAt(e.offset), e.text));
+      return item;
+    });
+  }
+}
+
+/** packageFor is the package a Go document belongs to, read from the files beside
+ * it on disk; an unsaved document has none to read, and is main. */
+function packageFor(doc: vscode.TextDocument): string {
+  if (doc.isUntitled) return "main";
+  const dir = path.dirname(doc.fileName);
+  const siblings: { file: string; text: string }[] = [];
+  try {
+    for (const file of fs.readdirSync(dir)) {
+      if (!file.endsWith(".go") || path.join(dir, file) === doc.fileName) continue;
+      siblings.push({ file, text: fs.readFileSync(path.join(dir, file), "utf8").slice(0, 4096) });
+      if (siblings.length >= 8) break;
+    }
+  } catch {
+    // An unreadable directory leaves the name to the directory's own.
+  }
+  return packageName({ dir, siblings, moduleRoot: fs.existsSync(path.join(dir, "go.mod")) });
 }
 
 class Hover implements vscode.HoverProvider {

@@ -71,6 +71,18 @@ async function run() {
   const text = hover.flatMap((h) => h.contents.map((c) => (typeof c === "string" ? c : c.value))).join("\n");
   assert.match(text, /flash messages/, "hover: " + text);
 
+  // Go function snippets bring the package clause and the imports they need.
+  const header = async (file) => {
+    const go = await vscode.workspace.openTextDocument(path.join(folder, file));
+    await vscode.window.showTextDocument(go);
+    const list = await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", go.uri, new vscode.Position(0, 0));
+    const item = list.items.find((i) => label(i) === "cfragf");
+    assert.ok(item, "no cfragf in " + file + ": " + list.items.map(label).slice(0, 30).join(", "));
+    return (item.additionalTextEdits ?? []).map((e) => e.newText).join("");
+  };
+  assert.equal(await header("components/new.go"), 'package components\n\nimport "github.com/Elagoht/collage/pkg/collage"\n\n');
+  assert.match(await header("auth-layout/new.go"), /^package authlayout\n/);
+
   // plugins-config.json: a misspelt key under a known plugin.
   const cfg = await vscode.workspace.openTextDocument(path.join(folder, "plugins-config.json"));
   await vscode.window.showTextDocument(cfg);

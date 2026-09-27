@@ -31,8 +31,8 @@ pages — for collage's own template functions and those of its
 | Prefix | |
 | --- | --- |
 | `cpage` | a page with a path and a content fragment |
-| `cpagef` | a function returning a page with a layout |
 | `cfrag` | a fragment |
+| `cinline` | an inline fragment — its template in the Go string |
 | `cfragd` | a fragment with a data handler returning data and tags |
 | `cfrags` | a fragment with a child bound into a slot |
 | `cload` | a typed data handler, `collage.Load` |
@@ -46,6 +46,23 @@ pages — for collage's own template functions and those of its
 | `cmw` | middleware with `app.Use` |
 | `cplugin` | a plugin skeleton |
 | `cbefore`, `cafter` | a plugin's BeforeRender and AfterRender hooks |
+
+#### Functions
+
+These write a whole function, and bring what the file needs above it: in a file
+with no `package` clause they add one — the package the other `.go` files beside
+it declare, `main` beside `go.mod`, otherwise the directory's name as an
+identifier (`auth-layout` → `authlayout`) — and they add the imports the function
+uses that the file lacks. A file that has its package and imports is left as it
+is. They are offered in collage projects (see `collage.completions`).
+
+| Prefix | |
+| --- | --- |
+| `cpagef` | a function returning a page in a layout chain (`WithLayouts`) |
+| `cfragf` | a function returning a fragment with a template file |
+| `cinlinef` | a function returning an inline fragment |
+| `clayoutf` | a function returning a layout, with `WithTitle` |
+| `cguardf` | a guard: `nil` lets the request through, a decision redirects or refuses it |
 
 ### Templates
 
@@ -75,6 +92,11 @@ own. A template keeps everything VS Code does for HTML — Emmet, tag completion
 formatting — and `{{ … }}` gets its own colours on top. The one cost: other HTML
 files in the same editor that use `{{ }}` for something else, such as Angular
 templates, are coloured as Go templates too.
+
+In Go, the template of an inline fragment is coloured the same way: the Go string
+after `collage.NewInlineFragment("name", ` is HTML, with its `{{ … }}` actions in
+collage's colours. The name and the opening backtick must be on the call's line,
+as the snippets write them; other strings stay Go strings.
 
 Your theme colours the scopes; to give collage's functions a colour of their own:
 

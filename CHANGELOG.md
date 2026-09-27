@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0
+
+- Function snippets — `cpagef`, `cfragf`, `cinlinef`, `clayoutf`, `cguardf` —
+  that add the file's `package` clause when it has none (the package of the
+  files beside it, `main` beside `go.mod`, or the directory's name) and the
+  imports the function uses that the file lacks.
+- `cinline`: an inline fragment (collage v0.29.0).
+- The template of `collage.NewInlineFragment("name", ` … `)` is coloured as HTML,
+  with collage's template actions in it.
+- `cpagef` writes `WithLayouts` (collage v0.28.0 removed `WithLayout`).
+
 ## 0.2.0
 
 - Names from the project, learnt from `go run . collage-inspect` (collage

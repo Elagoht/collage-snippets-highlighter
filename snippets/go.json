@@ -9,25 +9,19 @@
       "\tBuild()"
     ]
   },
-  "collage page function": {
-    "prefix": "cpagef",
-    "description": "collage: a function returning a page with a layout, like a scaffolded project's pages",
-    "body": [
-      "func ${1:Home}Page() *collage.Page {",
-      "\tcontent := collage.NewFragment(\"${2:home}\", \"pages/${2:home}.html\").Build()",
-      "",
-      "\treturn collage.NewPage(\"${2:home}\").",
-      "\t\tWithLayout(${3:layouts.Layout()}).",
-      "\t\tWithContent(content).",
-      "\t\tWithPath(\"${4:en}\", \"${5:/}\").",
-      "\t\tBuild()",
-      "}"
-    ]
-  },
   "collage fragment": {
     "prefix": "cfrag",
     "description": "collage: a fragment rendering a template",
-    "body": ["collage.NewFragment(\"${1:name}\", \"${2:components/$1.html}\").Build()"]
+    "body": [
+      "collage.NewFragment(\"${1:name}\", \"${2:components/$1.html}\").Build()"
+    ]
+  },
+  "collage inline fragment": {
+    "prefix": "cinline",
+    "description": "collage: a fragment whose template is written inline — for a few lines of markup",
+    "body": [
+      "collage.NewInlineFragment(\"${1:name}\", `${2:<p>{{.\\}\\}</p>}`).Build()"
+    ]
   },
   "collage fragment with data": {
     "prefix": "cfragd",

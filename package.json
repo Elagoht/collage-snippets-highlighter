@@ -2,7 +2,7 @@
   "name": "collage-snippets-highlighter",
   "displayName": "Collage Snippets & Highlighter",
   "description": "Snippets, template highlighting, completion and plugins-config.json validation for collage, the Go framework for server-rendered pages — its template functions and those of its published plugins.",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "publisher": "elagoht",
   "license": "MIT",
   "icon": "images/icon.png",

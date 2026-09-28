@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+
+- elagoht/honeypot's configuration schema follows v0.3.0, which dropped
+  `maxBody`: the action's own body limit is the one that applies.
+
 ## 0.4.1
 
 - `honeypot` takes an optional delay in seconds (elagoht/honeypot v0.2.0), and

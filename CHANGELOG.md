@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+- `honeypot` takes an optional delay in seconds (elagoht/honeypot v0.2.0), and
+  its configuration schema says `minDelay` defaults to off and `protect` to no
+  prefixes: the forms carrying `{{honeypot}}` say which paths are protected.
+
 ## 0.4.0
 
 - The string of a `const` or `var` declared as `collage.InlineHTML` (collage

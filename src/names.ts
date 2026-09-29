@@ -1,4 +1,5 @@
-// Which names are valid where: the page names pageURL takes, the fragments of a
+// Which names are valid where: the page names pageURL takes, the action names
+// actionURL takes, the fragments of a
 // page fragmentURL takes, the slots a template fills, the files asset serves —
 // from what collage-inspect reported. Completion offers them; diagnostics check
 // against them.
@@ -19,6 +20,8 @@ export function namesFor(inspection: Inspection, templateName: string | undefine
     case "pageURLIn":
       if (index === 0) return locales(inspection);
       return index === 1 ? routes(inspection) : params(inspection, arg(1), index - 2);
+    case "actionURL":
+      return index === 0 ? actions(inspection) : actionParams(inspection, arg(0), index - 1);
     case "localeURL":
       return index === 0 ? locales(inspection) : undefined;
     case "fragmentURL":
@@ -50,6 +53,20 @@ function params(inspection: Inspection, route: string, index: number): { what: s
   const found = inspection.pages.find((p) => p.name === route) ?? inspection.documents.find((d) => d.name === route);
   if (!found) return undefined;
   return { what: `parameter of ${route}`, names: (found.params ?? []).map((p) => ({ label: p, detail: `{${p}}` })) };
+}
+
+function actions(inspection: Inspection): { what: string; names: Name[] } {
+  return { what: "action", names: (inspection.actions ?? []).map((a) => ({ label: a.name, detail: `${a.methods.join(", ")} ${Object.values(a.paths).join(", ")}` })) };
+}
+
+function actionParams(inspection: Inspection, action: string, index: number): { what: string; names: Name[] } | undefined {
+  if (index % 2 !== 0) return undefined;
+  const found = (inspection.actions ?? []).find((a) => a.name === action);
+  if (!found) return undefined;
+  // Inspection lists an action's patterns, not its parameters: read them off.
+  const names = new Set<string>();
+  for (const pattern of Object.values(found.paths)) for (const m of pattern.matchAll(/\{([^}.]+)(?:\.\.\.)?\}/g)) names.add(m[1]);
+  return { what: `parameter of ${action}`, names: [...names].map((p) => ({ label: p, detail: `{${p}}` })) };
 }
 
 function locales(inspection: Inspection): { what: string; names: Name[] } {

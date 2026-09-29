@@ -66,6 +66,14 @@ async function run() {
   const defs = await vscode.commands.executeCommand("vscode.executeDefinitionProvider", doc.uri, new vscode.Position(1, 21));
   assert.ok(defs.length === 1 && defs[0].uri.fsPath.endsWith("main.go"), "definition: " + JSON.stringify(defs));
 
+  // Action names and their parameters: line 4.
+  const actionNames = await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", doc.uri, new vscode.Position(4, 27));
+  assert.ok(actionNames.items.map(label).includes("vote"), "no action names: " + actionNames.items.map(label).slice(0, 30).join(", "));
+  const actionParams = await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", doc.uri, new vscode.Position(4, 73));
+  assert.ok(actionParams.items.map(label).includes("slug"), "no action parameters: " + actionParams.items.map(label).slice(0, 30).join(", "));
+  const actionDefs = await vscode.commands.executeCommand("vscode.executeDefinitionProvider", doc.uri, new vscode.Position(4, 67));
+  assert.ok(actionDefs.length === 1 && actionDefs[0].uri.fsPath.endsWith("main.go"), "action definition: " + JSON.stringify(actionDefs));
+
   // flashes is described by collage-flash's collage.json: hover on line 3.
   const hover = await vscode.commands.executeCommand("vscode.executeHoverProvider", doc.uri, new vscode.Position(3, 50));
   const text = hover.flatMap((h) => h.contents.map((c) => (typeof c === "string" ? c : c.value))).join("\n");

@@ -306,6 +306,7 @@ class Definition implements vscode.DefinitionProvider {
     const pageArg = { pageURL: 0, pageURLIn: 1, fragmentURL: 0, fragmentURLIn: 1 }[arg.call.name];
     if (pageArg === arg.index) pattern = new RegExp(`New(?:Page|Document)\\(\\s*${escape(q)}`);
     else if ((arg.call.name === "fragmentURL" && arg.index === 1) || (arg.call.name === "fragmentURLIn" && arg.index === 2)) pattern = new RegExp(`NewFragment\\(\\s*${escape(q)}`);
+    else if (arg.call.name === "actionURL" && arg.index === 0) pattern = new RegExp(`NewAction\\(\\s*${escape(q)}`);
     else if (arg.call.name === "slot") pattern = new RegExp(`(?:WithSlotFragment|WithSlotResolver|WithSlot)\\(\\s*${escape(q)}`);
     else if (arg.call.name === "asset" || arg.call.name === "stylesheet") return this.file(project, value);
     if (!pattern) return undefined;

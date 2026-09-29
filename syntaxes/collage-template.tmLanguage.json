@@ -34,7 +34,7 @@
         },
         {
           "name": "support.function.collage.core",
-          "match": "(?<![.$\\w])\\b(?:slot|hoist|asset|stylesheet|csrfToken|pageURL|pageURLIn|localeURL|fragmentURL|fragmentURLIn|safeHTML|safeURL|dict|default|upper|lower|title|join|formatTime)\\b"
+          "match": "(?<![.$\\w])\\b(?:slot|hoist|asset|stylesheet|csrfToken|pageURL|pageURLIn|localeURL|actionURL|fragmentURL|fragmentURLIn|safeHTML|safeURL|dict|default|upper|lower|title|join|formatTime)\\b"
         },
         {
           "name": "support.function.collage.plugin",

@@ -55,6 +55,11 @@ func main() {
 	if err := app.RegisterPage(collage.NewPage("post").WithContent(post).WithPath("en", "/blog/{slug}").Build()); err != nil {
 		panic(err)
 	}
+	vote := collage.NewAction("vote").WithPath("en", "/blog/{slug}/vote").WithMethods("POST").
+		WithHandler(func(context.Context, *collage.RenderContext) (*collage.ActionResult, error) { return nil, nil }).Build()
+	if err := app.RegisterAction(vote); err != nil {
+		panic(err)
+	}
 	if err := app.Mount("/static/", os.DirFS("static")); err != nil {
 		panic(err)
 	}
@@ -67,6 +72,7 @@ writeFileSync(join(project, "templates/pages/post.html"), [
   `<a href="{{pageURL "post" ""}}">x</a>`,
   `<a href="{{pageURL "posts"}}">x</a>`,
   `<link href="{{asset "/static/app.css"}}">{{range flashes}}{{.Text}}{{end}}`,
+  `<form action="{{actionURL ""}}"></form><form action="{{actionURL "vote" ""}}"></form>`,
   "",
 ].join("\n"));
 writeFileSync(join(project, "static/app.css"), "body{}\n");

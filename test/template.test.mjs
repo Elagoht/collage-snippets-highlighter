@@ -55,7 +55,8 @@ const inspection = {
   ],
   fragments: [{ name: "post", template: "pages/post.html", slots: ["aside", "comments"] }, { name: "home", template: "pages/home.html" }],
   documents: [{ name: "feed", paths: { "": "/feed.xml" }, contentType: "application/xml" }],
-  actions: [], templateFuncs: [], plugins: [],
+  actions: [{ name: "logout", paths: { en: "/logout" }, methods: ["POST"] }, { name: "vote", paths: { en: "/blog/{slug}/vote", tr: "/yazi/{slug}/oy" }, methods: ["POST"] }],
+  templateFuncs: [], plugins: [],
   mounts: [{ prefix: "/static/", files: ["/static/app.css", "/static/app.js"] }],
 };
 const call = (src) => allCalls(src)[0];
@@ -70,6 +71,9 @@ test("names valid in each position", () => {
   assert.deepEqual(labels(namesFor(inspection, undefined, call(`{{fragmentURL "post" ""}}`), 1)), ["comments"]);
   assert.deepEqual(labels(namesFor(inspection, "pages/post.html", call(`{{slot ""}}`), 0)), ["aside", "comments"]);
   assert.deepEqual(labels(namesFor(inspection, undefined, call(`{{stylesheet ""}}`), 0)), ["/static/app.css"]);
+  assert.deepEqual(labels(namesFor(inspection, undefined, call(`{{actionURL ""}}`), 0)), ["logout", "vote"]);
+  assert.deepEqual(labels(namesFor(inspection, undefined, call(`{{actionURL "vote" ""}}`), 1)), ["slug"]);
+  assert.equal(namesFor(inspection, undefined, call(`{{actionURL "vote" "slug" ""}}`), 2), undefined);
 });
 
 test("unknown names, only where the set is certain", () => {
@@ -80,4 +84,5 @@ test("unknown names, only where the set is certain", () => {
   assert.equal(unknownName(inspection, "pages/post.html", call(`{{slot "sidebar"}}`), 0), undefined);
   assert.match(unknownName(inspection, undefined, call(`{{asset "/static/nope.css"}}`), 0), /No mounted file/);
   assert.equal(unknownName(inspection, undefined, call(`{{pageURL "post" "slug" "x"}}`), 2), undefined);
+  assert.match(unknownName(inspection, undefined, call(`{{actionURL "logut"}}`), 0), /No action named "logut"/);
 });

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- `actionURL` (collage v0.36.0): highlighted and documented, with the project's
+  action names offered and checked in its first argument, the parameters read
+  off the action's patterns, and go-to-definition to its `NewAction`.
+
 ## 0.4.2
 
 - elagoht/honeypot's configuration schema follows v0.3.0, which dropped

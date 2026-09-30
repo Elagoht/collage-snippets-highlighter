@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- plugins-config.json: i18n v0.2.0's `strict`, which refuses to start while the
+  catalogs differ.
+
 ## 0.6.0
 
 - HTML inside Go is edited as HTML is: completion of tags and attributes, your

@@ -9,6 +9,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -30,12 +31,13 @@ type schema struct {
 	// Closed forbids properties the schema does not name: a misspelt key in a
 	// plugin's section is flagged rather than silently ignored, as collage
 	// ignores it.
-	Closed   bool     `json:"-"`
-	Items    *schema  `json:"items,omitempty"`
-	Enum     []string `json:"enum,omitempty"`
-	Pattern  string   `json:"pattern,omitempty"`
-	Examples []string `json:"examples,omitempty"`
-	Link     string   `json:"markdownDescription,omitempty"`
+	Closed   bool      `json:"-"`
+	Items    *schema   `json:"items,omitempty"`
+	AnyOf    []*schema `json:"anyOf,omitempty"`
+	Enum     []string  `json:"enum,omitempty"`
+	Pattern  string    `json:"pattern,omitempty"`
+	Examples []string  `json:"examples,omitempty"`
+	Link     string    `json:"markdownDescription,omitempty"`
 }
 
 // MarshalJSON writes additionalProperties as a schema, as false for a closed
@@ -70,6 +72,40 @@ type pkg struct {
 	// reads reports that the plugin decodes its configuration with host.Config:
 	// without it, an Options struct is Go-only, whatever its fields look like.
 	reads bool
+	// decodes holds the types with their own UnmarshalJSON, whose JSON form their
+	// Go type does not tell.
+	decodes map[string]bool
+	// errs collects what the schema could not be made of: a decoder with no entry
+	// in decoders.
+	errs []error
+}
+
+// durationPattern is what time.ParseDuration reads: "25s", "1m30s".
+const durationPattern = `^(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$`
+
+// decoders are the JSON forms of the plugins' types that decode themselves,
+// keyed "<plugin name>.<type>", written from each type's UnmarshalJSON. A type
+// with a decoder and no entry here stops the generator: guessing from its Go type
+// is how opti-image's webp, a uint8 read from true, false or "auto", came to be
+// an integer that rejected every valid value.
+var decoders = map[string]func() *schema{
+	"elagoht/opti-image.WebPMode": func() *schema {
+		return &schema{AnyOf: []*schema{{Type: "boolean"}, {Type: "string", Enum: []string{"auto"}}}}
+	},
+	"elagoht/opti-image.Duration": durationOrNanoseconds,
+	"elagoht/cdnpurge.Duration":   durationOrNanoseconds,
+	"elagoht/live.Duration": func() *schema {
+		return &schema{Type: "string", Pattern: durationPattern, Examples: []string{"30s", "5m"}}
+	},
+}
+
+// durationOrNanoseconds is a duration written as Go writes one, "10s", or a
+// number of nanoseconds.
+func durationOrNanoseconds() *schema {
+	return &schema{AnyOf: []*schema{
+		{Type: "string", Pattern: durationPattern, Examples: []string{"30s", "5m"}},
+		{Type: "integer", Description: "nanoseconds"},
+	}}
 }
 
 func main() {
@@ -101,6 +137,9 @@ func main() {
 			continue // not a plugin: the docs site, this repo, the framework
 		}
 		root.Properties[p.name] = p.schema()
+		if len(p.errs) > 0 {
+			fail(errors.Join(p.errs...))
+		}
 		if *manifests {
 			if err := writeManifest(dir, p, root.Properties[p.name], *catalogPath, *snippetsPath); err != nil {
 				fail(err)
@@ -137,7 +176,7 @@ func parse(dir string) (*pkg, error) {
 		if pkgName == "main" {
 			continue
 		}
-		p := &pkg{types: map[string]*ast.TypeSpec{}, consts: map[string][]string{}, repo: filepath.Base(dir)}
+		p := &pkg{types: map[string]*ast.TypeSpec{}, consts: map[string][]string{}, decodes: map[string]bool{}, repo: filepath.Base(dir)}
 		for _, file := range astPkg.Files {
 			ast.Inspect(file, func(n ast.Node) bool {
 				if call, ok := n.(*ast.CallExpr); ok {
@@ -153,6 +192,15 @@ func parse(dir string) (*pkg, error) {
 				p.doc = firstSentence(file.Doc.Text())
 			}
 			for _, decl := range file.Decls {
+				if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name == "UnmarshalJSON" && fn.Recv != nil && len(fn.Recv.List) == 1 {
+					recv := fn.Recv.List[0].Type
+					if star, ok := recv.(*ast.StarExpr); ok {
+						recv = star.X
+					}
+					if id, ok := recv.(*ast.Ident); ok {
+						p.decodes[id.Name] = true
+					}
+				}
 				gen, ok := decl.(*ast.GenDecl)
 				if !ok {
 					continue
@@ -329,9 +377,14 @@ func (p *pkg) typeSchema(expr ast.Expr, depth int) *schema {
 		if !ok {
 			return &schema{}
 		}
-		// A plugin's own Duration type reads "25s", "1m", as time.ParseDuration does.
-		if strings.HasSuffix(t.Name, "Duration") {
-			return &schema{Type: "string", Pattern: `^(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$`, Examples: []string{"30s", "5m"}}
+		if p.decodes[t.Name] {
+			key := p.name + "." + t.Name
+			decoder, ok := decoders[key]
+			if !ok {
+				p.errs = append(p.errs, fmt.Errorf("%s decodes itself with UnmarshalJSON; add what it reads to decoders", key))
+				return &schema{}
+			}
+			return decoder()
 		}
 		s := p.typeSchema(spec.Type, depth+1)
 		if values := p.consts[t.Name]; len(values) > 0 && s.Type == "string" {

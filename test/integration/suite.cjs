@@ -91,6 +91,49 @@ async function run() {
   assert.equal(await header("components/new.go"), 'package components\n\nimport "github.com/Elagoht/collage/pkg/collage"\n\n');
   assert.match(await header("auth-layout/new.go"), /^package authlayout\n/);
 
+  // Inline HTML in Go is edited as HTML is.
+  const inline = await vscode.workspace.openTextDocument(path.join(folder, "components/inline.go"));
+  const editor = await vscode.window.showTextDocument(inline);
+  const at = (needle, delta = needle.length) => inline.positionAt(inline.getText().indexOf(needle) + delta);
+  const complete = async (pos) => (await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", inline.uri, pos)).items;
+
+  const tags = (await complete(at("<di"))).map(label);
+  assert.ok(tags.includes("div"), "no HTML tags in inline HTML: " + tags.slice(0, 30).join(", "));
+  const emmet = (await complete(at("ul>li*2"))).find((i) => label(i) === "ul>li*2");
+  assert.ok(emmet && /Emmet/.test(emmet.detail), "no Emmet expansion in inline HTML");
+  const snippetItems = await complete(at("cform"));
+  const snippets = snippetItems.map(label);
+  assert.ok(snippets.includes("cformv"), "no HTML snippets in inline HTML: " + snippets.slice(0, 40).join(", "));
+  const twice = [...new Set(snippets)].filter((l) => snippets.filter((x) => x === l).length > 1);
+  assert.deepEqual(twice, [], "offered twice: " + twice.join(", "));
+  assert.ok(!snippets.includes("cfragf"), "a Go snippet offered inside the HTML");
+  const inlinePages = await until("page names in inline HTML", async () => {
+    const labels = (await complete(at('pageURL ""', 9))).map(label);
+    return labels.includes("post") ? labels : undefined;
+  }, 30000);
+  assert.ok(inlinePages.includes("post"));
+
+  const hoverUl = await vscode.commands.executeCommand("vscode.executeHoverProvider", inline.uri, at("<ul>", 2));
+  assert.match(hoverUl.flatMap((h) => h.contents.map((c) => (typeof c === "string" ? c : c.value))).join("\n"), /list/i, "no HTML hover");
+
+  const folds = await vscode.commands.executeCommand("vscode.executeFoldingRangeProvider", inline.uri);
+  assert.ok(folds.some((f) => f.start === at("<ul>").line), "the <ul> does not fold: " + JSON.stringify(folds));
+
+  const highlights = await vscode.commands.executeCommand("vscode.executeDocumentHighlights", inline.uri, at("<section", 3));
+  assert.equal(highlights?.length, 2, "the matching tag is not highlighted");
+
+  const inlineDiags = await until("diagnostics in inline HTML", async () => {
+    const d = vscode.languages.getDiagnostics(inline.uri).filter((x) => x.source === "collage");
+    return d.length ? d : undefined;
+  }, 30000);
+  assert.equal(inlineDiags.length, 1, JSON.stringify(inlineDiags.map((d) => d.message)));
+  assert.equal(inlineDiags[0].range.start.line, at('"posts"').line);
+
+  // Typing ">" closes the tag.
+  editor.selection = new vscode.Selection(at("<span"), at("<span"));
+  await vscode.commands.executeCommand("type", { text: ">" });
+  await until("the tag closed", async () => inline.lineAt(at("<span").line).text === "<span></span>", 5000);
+
   // plugins-config.json: a misspelt key under a known plugin.
   const cfg = await vscode.workspace.openTextDocument(path.join(folder, "plugins-config.json"));
   await vscode.window.showTextDocument(cfg);

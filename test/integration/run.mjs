@@ -82,6 +82,30 @@ for (const dir of ["components", "auth-layout"]) mkdirSync(join(project, dir), {
 writeFileSync(join(project, "components/card.go"), "// Package components is the site's parts.\npackage components\n");
 writeFileSync(join(project, "components/new.go"), "");
 writeFileSync(join(project, "auth-layout/new.go"), "");
+// Inline HTML, its arguments on lines of their own: edited as HTML is.
+writeFileSync(join(project, "components/inline.go"), [
+  "package components",
+  "",
+  'import "github.com/Elagoht/collage/pkg/collage"',
+  "",
+  "func Row() *collage.Fragment {",
+  "\treturn collage.NewInlineFragment(",
+  '\t\t"row",',
+  "\t\t`",
+  "<ul>",
+  '  <li><a href="{{pageURL ""}}">x</a></li>',
+  "</ul>",
+  '<a href="{{pageURL "posts"}}">missing</a>',
+  "<di",
+  "ul>li*2",
+  "cform",
+  "<section></section>",
+  "<span",
+  "`,",
+  "\t).Build()",
+  "}",
+  "",
+].join("\n"));
 writeFileSync(join(project, "plugins-config.json"), `{ "elagoht/flash": { "cookiee": "x" } }\n`);
 execFileSync("go", ["mod", "tidy"], { cwd: project, stdio: "inherit" });
 

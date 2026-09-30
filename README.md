@@ -11,6 +11,10 @@ pages — for collage's own template functions and those of its
   functions and Go's own builtins in their own colours, fields, variables, strings
   and pipes too — in attribute values as well as text.
 - **Emmet, tag completion and formatting keep working**: templates stay HTML files.
+- **HTML inside Go edited as HTML**: the template of an inline fragment gets tag
+  and attribute completion, your HTML snippets, Emmet, hover, folding, the
+  matching tag, tags closed as you type them — and collage's completion,
+  checks and go-to-definition in its `{{ … }}`.
 - **Completion and hover** inside `{{ … }}` for every template function, with its
   signature and documentation, and for collage-live's `data-collage-*` attributes.
 - **Names from your project**: page names in `{{pageURL "…"}}` and their
@@ -47,22 +51,34 @@ pages — for collage's own template functions and those of its
 | `cplugin` | a plugin skeleton |
 | `cbefore`, `cafter` | a plugin's BeforeRender and AfterRender hooks |
 
-#### Functions
+#### With their imports
 
-These write a whole function, and bring what the file needs above it: in a file
-with no `package` clause they add one — the package the other `.go` files beside
-it declare, `main` beside `go.mod`, otherwise the directory's name as an
-identifier (`auth-layout` → `authlayout`) — and they add the imports the function
-uses that the file lacks. A file that has its package and imports is left as it
-is. They are offered in collage projects (see `collage.completions`).
+These bring what the file needs above them: in a file with no `package` clause
+they add one — the package the other `.go` files beside it declare, `main` beside
+`go.mod`, otherwise the directory's name as an identifier (`auth-layout` →
+`authlayout`) — and they add the imports they use that the file lacks,
+collage-validate's or collage-flash's among them. A file that has its package and
+imports is left as it is. They are offered in collage projects (see
+`collage.completions`), and not inside inline HTML, where HTML's are.
 
 | Prefix | |
 | --- | --- |
 | `cpagef` | a function returning a page in a layout chain (`WithLayouts`) |
+| `cpagea` | a function returning a page with layouts and its form's action (`WithActionFor`) |
 | `cfragf` | a function returning a fragment with a template file |
 | `cinlinef` | a function returning an inline fragment |
+| `chtml` | a `collage.InlineHTML` constant |
 | `clayoutf` | a function returning a layout, with `WithTitle` |
 | `cguardf` | a guard: `nil` lets the request through, a decision redirects or refuses it |
+| `cactionf` | a function returning a form's action: validated, a flash message, a redirect by name |
+| `cvalid`, `cvf`, `cvfail` | collage-validate: check a form, one field's rule, refuse it for a reason of the handler's |
+| `cflashadd` | collage-flash: a message for the next page |
+| `credirect`, `ccookie` | a redirect to a page by name (`rc.URL`), a redirect setting a cookie |
+| `cdataf` | a function returning a data handler that loads a typed view |
+| `cmeta`, `cjsonld` | collage-meta: title, description, canonical; collage-jsonld: an Article |
+| `cslotr`, `cstate` | a slot resolver; a typed value fragments share within a render |
+| `cnotfound`, `c404f` | a missing record as a 404; a not-found page |
+| `cregall`, `cparam` | register a list of pages; an integer route parameter |
 
 ### Templates
 
@@ -74,11 +90,14 @@ is. They are offered in collage projects (see `collage.completions`).
 | `clink`, `curl`, `cfurl` | a link by page name, `{{pageURL}}`, `{{fragmentURL}}` |
 | `clang` | a language switcher with `{{localeURL}}` |
 | `cform` | a form posting to an action, with its forgery token |
+| `cformv` | a form collage-validate checks: a field, the form's own message, the token and a honeypot |
+| `caform`, `caurl` | a form posting to an action by name, `{{actionURL}}` |
+| `crangelink` | a list of links to a page with a parameter, and what shows when there is none |
 | `cif`, `cife`, `crange`, `cwith`, `cdefine`, `ccomment` | Go template control structures |
 | `clive`, `cliveclient` | collage-live: an element kept current, the client |
-| `cflash` | collage-flash: the messages after a redirect |
+| `cflash`, `cflasht` | collage-flash: the messages after a redirect; as toasts that remove themselves |
 | `ct`, `ctn` | collage-i18n: a translation, a plural |
-| `cfield` | collage-validate: an input with its error and its value kept |
+| `cfield`, `cfieldt`, `cferr` | collage-validate: an input, a textarea, the form's own message |
 | `choney` | collage-honeypot |
 | `cnonce` | collage-secure: an inline script allowed by the CSP |
 | `ctoc`, `csearch`, `ccode`, `cbundle` | collage-toc, collage-search, collage-highlight, collage-bundle |
@@ -93,9 +112,10 @@ formatting — and `{{ … }}` gets its own colours on top. The one cost: other 
 files in the same editor that use `{{ }}` for something else, such as Angular
 templates, are coloured as Go templates too.
 
-In Go, the template of an inline fragment is coloured the same way: the Go string
-after `collage.NewInlineFragment("name", ` is HTML, with its `{{ … }}` actions in
-collage's colours. So is the string of a constant or variable declared as
+In Go, the template of an inline fragment is coloured the same way: the raw
+string among `collage.NewInlineFragment`'s arguments is HTML, with its `{{ … }}`
+actions in collage's colours, and its `<script>` and `<style>` in JavaScript's and
+CSS's. So is the string of a constant or variable declared as
 `collage.InlineHTML` (collage v0.30.0), which holds a template apart from its call:
 
 ```go
@@ -103,9 +123,8 @@ const loginForm collage.InlineHTML = `
   <form method="post">{{csrfToken}}</form>`
 ```
 
-The name, or the declaration, and the opening backtick must be on one line, as the
-snippets write them; other strings stay Go strings. Snippets and completions of
-template functions work in HTML files only, not inside these strings.
+The arguments may be on lines of their own, and a declaration's string may start
+on the line after its `=`. Other strings stay Go strings.
 
 Your theme colours the scopes; to give collage's functions a colour of their own:
 
@@ -127,6 +146,29 @@ Your theme colours the scopes; to give collage's functions a colour of their own
 | `variable.other.member.collage-template` | fields: `.Title` |
 | `variable.other.collage-template` | variables: `$post` |
 | `punctuation.section.embedded.begin/end.collage-template` | `{{`, `}}` |
+
+## HTML inside Go
+
+Inside an inline template, the editing is an HTML file's:
+
+- **Completion** of tags and attributes, and **your HTML snippets** — the ones you
+  wrote, this extension's, other extensions' — as VS Code offers them in HTML.
+  Go's snippets are not offered there.
+- **Emmet**: `ul>li*3` is offered as its expansion, first in the list.
+- **Tags closed as you type** `>`, and `</` completed, following
+  `html.autoClosingTags`.
+- **Hover**, **folding** — every element, and `<!-- #region -->` sections — and
+  **the matching tag** highlighted.
+- **Both names of a tag pair edited as one**, with `editor.linkedEditing` on, as
+  in an HTML file.
+- **collage's own**: template functions completed and described inside
+  `{{ … }}`, page and action names in their arguments, a warning for a name the
+  application does not have, and go-to-definition.
+
+It works on a copy of the Go file that keeps only its HTML, the rest blanked out,
+so every position is the same in both: VS Code's HTML support answers for the
+copy, and the answer is shown in the Go file. The Go around the template is left
+to Go — its folding and gopls's are merged.
 
 ## Completion and hover
 

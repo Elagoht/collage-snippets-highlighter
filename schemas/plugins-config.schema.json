@@ -197,12 +197,20 @@
       "description": "A collage plugin that purges a CDN's copies of the pages collage invalidates.",
       "properties": {
         "backoff": {
-          "type": "string",
           "description": "Backoff is the wait before the first retry, doubled before each one after it. A 429's Retry-After, when longer, is honoured instead. Default \"1s\".",
-          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
-          "examples": [
-            "30s",
-            "5m"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
           ]
         },
         "baseURL": {
@@ -241,12 +249,20 @@
           "description": "Retries is how many times a request the CDN answered 429 or 5xx, or that did not reach it, is tried again. Default 4; negative tries once."
         },
         "timeout": {
-          "type": "string",
           "description": "Timeout bounds one request to the CDN. Default \"10s\".",
-          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
-          "examples": [
-            "30s",
-            "5m"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
           ]
         },
         "webhook": {
@@ -269,12 +285,20 @@
           "additionalProperties": false
         },
         "window": {
-          "type": "string",
           "description": "Window is how long invalidations are collected before they are sent, so a burst of them is one request. Default \"2s\".",
-          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
-          "examples": [
-            "30s",
-            "5m"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
           ]
         }
       },
@@ -692,7 +716,7 @@
       "properties": {
         "css": {
           "type": "boolean",
-          "description": "CSS minifies mounted stylesheets."
+          "description": "CSS minifies mounted stylesheets, and \u003cstyle\u003e elements in HTML."
         },
         "html": {
           "type": "boolean",
@@ -700,11 +724,11 @@
         },
         "js": {
           "type": "boolean",
-          "description": "JS minifies mounted scripts. Newlines are preserved whatever this is set to; see minifyJS."
+          "description": "JS minifies mounted scripts, and inline \u003cscript\u003es of JavaScript in HTML. A line break is kept wherever a semicolon may stand for it; see minifyJS."
         },
         "json": {
           "type": "boolean",
-          "description": "JSON minifies documents and mounted files served as JSON. It is exact: encoding/json knows the whole grammar."
+          "description": "JSON minifies documents and mounted files served as JSON, and, in HTML, a \u003cscript\u003e holding JSON — structured data, an import map. It is exact: encoding/json knows the whole grammar."
         }
       },
       "markdownDescription": "A collage plugin that strips whitespace and comments from what an application serves: rendered pages, documents, and mounted assets.\n\n[collage-minimizer](https://github.com/Elagoht/collage-minimizer)",
@@ -788,12 +812,20 @@
           "description": "Disabled turns the plugin off without removing it from the application."
         },
         "fetchTimeout": {
-          "type": "string",
           "description": "FetchTimeout bounds a single origin fetch. Defaults to 10s. In JSON it is written the way a person writes a duration — \"10s\", \"500ms\" — as well as as a number of nanoseconds. See Duration.",
-          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
-          "examples": [
-            "30s",
-            "5m"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
           ]
         },
         "maxPixels": {
@@ -817,8 +849,18 @@
           "description": "Quality is the JPEG quality of re-encoded images, 1..100. Defaults to 82."
         },
         "webp": {
-          "type": "integer",
-          "description": "WebP says which images are re-encoded to WebP: none, all, or — \"auto\" — only those that would otherwise be lossless. See WebPMode."
+          "description": "WebP says which images are re-encoded to WebP: none, all, or — \"auto\" — only those that would otherwise be lossless. See WebPMode.",
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "auto"
+              ]
+            }
+          ]
         }
       },
       "markdownDescription": "A collage plugin that rewrites images declaring a width and a height to resized copies it serves itself.\n\n[collage-opti-image](https://github.com/Elagoht/collage-opti-image)",

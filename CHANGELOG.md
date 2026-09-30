@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0
+
+- HTML inside Go is edited as HTML is: completion of tags and attributes, your
+  HTML snippets, Emmet, hover, folding, the matching tag, tags closed as they are
+  typed and tag pairs renamed together — and collage's completion, name checks
+  and go-to-definition in its `{{ … }}`.
+- An inline template is coloured when `NewInlineFragment`'s arguments are on
+  lines of their own, and when a declaration's string starts on the line after
+  its `=`. Before, the name and the backtick had to be on the call's line.
+- Snippets from a real application's patterns: `cpagea`, `cactionf`, `cvalid`,
+  `cvf`, `cvfail`, `cflashadd`, `credirect`, `ccookie`, `cdataf`, `cmeta`,
+  `cjsonld`, `cslotr`, `cstate`, `cnotfound`, `c404f`, `chtml`, `cregall`,
+  `cparam` in Go, with the imports they use; `cformv`, `cfieldt`, `cferr`,
+  `caform`, `caurl`, `crangelink`, `cflasht` in templates.
+- plugins-config.json: opti-image's `webp` takes `true`, `false` or `"auto"` —
+  it was checked as an integer, and every valid value was refused — and its
+  `fetchTimeout`, like cdnpurge's durations, takes `"10s"` or nanoseconds. A
+  type that decodes itself is described by what its decoder reads; the
+  generator refuses one it has no description of. Regenerated from every
+  plugin's latest release.
+
 ## 0.5.0
 
 - `actionURL` (collage v0.36.0): highlighted and documented, with the project's

@@ -13,6 +13,7 @@ import { Projects, type Project, type Manifest } from "./project";
 import { allCalls, stringArgAt } from "./template";
 import { namesFor, unknownName } from "./names";
 import { functionSnippets, headerEdits, packageName } from "./gosnippets";
+import { register as registerInlineHTML, VirtualDocuments } from "./inlinehtml";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -47,13 +48,14 @@ export function activate(context: vscode.ExtensionContext): void {
   const projects = new Projects();
   const diagnostics = vscode.languages.createDiagnosticCollection("collage");
   const schema = new SchemaProvider(projects);
+  const virtual = new VirtualDocuments();
 
   context.subscriptions.push(
     projects,
     diagnostics,
     vscode.languages.registerCompletionItemProvider("html", new Completion(projects), '"', "{", " ", "(", "|", "-", "/"),
-    vscode.languages.registerCompletionItemProvider("go", new ManifestSnippets(projects, "go")),
-    vscode.languages.registerCompletionItemProvider("go", new FunctionSnippets(projects)),
+    vscode.languages.registerCompletionItemProvider("go", new ManifestSnippets(projects, "go", virtual)),
+    vscode.languages.registerCompletionItemProvider("go", new FunctionSnippets(projects, virtual)),
     vscode.languages.registerHoverProvider("html", new Hover(projects)),
     vscode.languages.registerDefinitionProvider("html", new Definition(projects)),
     vscode.workspace.registerTextDocumentContentProvider("collage-schema", schema),
@@ -67,7 +69,9 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
   );
 
-  const check = new Diagnostics(projects, diagnostics);
+  registerInlineHTML(context, virtual);
+
+  const check = new Diagnostics(projects, diagnostics, virtual);
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((d) => check.schedule(d)),
     vscode.workspace.onDidChangeTextDocument((e) => check.schedule(e.document)),
@@ -223,8 +227,9 @@ function manifestSnippetItems(project: Project | undefined, language: "html" | "
 }
 
 class ManifestSnippets implements vscode.CompletionItemProvider {
-  constructor(private readonly projects: Projects, private readonly language: "html" | "go") {}
-  async provideCompletionItems(doc: vscode.TextDocument): Promise<vscode.CompletionItem[] | undefined> {
+  constructor(private readonly projects: Projects, private readonly language: "html" | "go", private readonly virtual: VirtualDocuments) {}
+  async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.CompletionItem[] | undefined> {
+    if (this.virtual.regionAt(doc, pos)) return undefined; // HTML there, not Go
     const { enabled, project } = await projectFor(this.projects, doc);
     return enabled ? manifestSnippetItems(project, this.language) : undefined;
   }
@@ -234,9 +239,10 @@ class ManifestSnippets implements vscode.CompletionItemProvider {
  * above them — its package clause when it has none, and the imports it lacks —
  * so the function compiles where it lands. */
 class FunctionSnippets implements vscode.CompletionItemProvider {
-  constructor(private readonly projects: Projects) {}
+  constructor(private readonly projects: Projects, private readonly virtual: VirtualDocuments) {}
 
-  async provideCompletionItems(doc: vscode.TextDocument): Promise<vscode.CompletionItem[] | undefined> {
+  async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.CompletionItem[] | undefined> {
+    if (this.virtual.regionAt(doc, pos)) return undefined; // HTML there, not Go
     const { enabled } = await projectFor(this.projects, doc);
     if (!enabled) return undefined;
     const text = doc.getText();
@@ -339,13 +345,24 @@ function escape(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Names in templates that the application does not have. */
+/** Names in templates that the application does not have — in an HTML file, and
+ * in the inline HTML of a Go file, checked through its virtual document. */
 class Diagnostics {
   private readonly timers = new Map<string, NodeJS.Timeout>();
 
-  constructor(private readonly projects: Projects, private readonly collection: vscode.DiagnosticCollection) {}
+  constructor(private readonly projects: Projects, private readonly collection: vscode.DiagnosticCollection, private readonly virtual: VirtualDocuments) {}
 
   schedule(doc: vscode.TextDocument): void {
+    if (doc.languageId === "go" && doc.uri.scheme === "file") {
+      // Its virtual document changes with it, and is checked when it does.
+      const key = doc.uri.toString();
+      clearTimeout(this.timers.get(key));
+      this.timers.set(key, setTimeout(() => {
+        if (this.virtual.regionsOf(doc).length > 0) void this.virtual.sync(doc);
+        else this.collection.delete(doc.uri);
+      }, 400));
+      return;
+    }
     if (doc.languageId !== "html") return;
     const key = doc.uri.toString();
     clearTimeout(this.timers.get(key));
@@ -355,8 +372,10 @@ class Diagnostics {
   private async check(doc: vscode.TextDocument): Promise<void> {
     const mode = vscode.workspace.getConfiguration("collage").get<string>("diagnostics", "warning");
     const project = await this.projects.forFile(doc.fileName);
+    // A virtual document's findings are its Go file's: the offsets are the same.
+    const target = VirtualDocuments.goUriOf(doc.uri) ?? doc.uri;
     if (mode === "off" || !project?.inspection) {
-      this.collection.delete(doc.uri);
+      this.collection.delete(target);
       return;
     }
     const text = doc.getText();
@@ -373,7 +392,7 @@ class Diagnostics {
         }
       });
     }
-    this.collection.set(doc.uri, out);
+    this.collection.set(target, out);
   }
 }
 

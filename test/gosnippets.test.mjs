@@ -85,3 +85,60 @@ test("the function snippets", () => {
   assert.ok(byPrefix.cfragf.body[0].startsWith("func "), "cfragf is a function");
   assert.ok(byPrefix.cfragf.body[0].includes("*collage.Fragment"), "cfragf returns a fragment");
 });
+
+// expand fills every placeholder with its default, as accepting a snippet with
+// Tab does, and unescapes what the snippet syntax escapes.
+function expand(body) {
+  let text = body.join("\n");
+  for (let prev = ""; prev !== text; ) {
+    prev = text;
+    text = text
+      .replace(/\$\{\d+\|([^,|}]*)[^}]*\|\}/g, "$1")
+      .replace(/\$\{\d+:((?:[^{}\\]|\\.)*)\}/g, "$1")
+      .replace(/\$\{\d+\}|\$\d+/g, "");
+  }
+  return text.replace(/\\([}$\\])/g, "$1");
+}
+
+// The package a path is imported as: its last element, "collage-" dropped.
+const importName = (p) => p.split("/").pop().replace(/^collage-/, "").replace(/-/g, "");
+
+test("every function snippet is Go that parses, and uses each import it adds", async () => {
+  const { execFileSync } = await import("node:child_process");
+  for (const s of functionSnippets) {
+    const body = expand(s.body);
+    const topLevel = /^(func|const|type|var) /.test(body);
+    const imports = s.imports.map((p) => `import "${p}"`).join("\n");
+    const src = `package p\n\n${imports}\n\n${topLevel ? body : `func _() (any, error) {\n${body}\n}`}\n`;
+    try {
+      execFileSync("gofmt", ["-e"], { input: src, stdio: ["pipe", "pipe", "pipe"] });
+    } catch (e) {
+      assert.fail(`${s.prefix} does not parse:\n${e.stderr}\n${src}`);
+    }
+    for (const p of s.imports) {
+      const name = importName(p);
+      assert.ok(new RegExp(`\\b${name}\\.`).test(body), `${s.prefix} imports ${p} but does not use ${name}.`);
+    }
+  }
+});
+
+test("function snippet prefixes are unique, and apart from the static Go snippets", async () => {
+  const { readFileSync } = await import("node:fs");
+  const statics = Object.values(JSON.parse(readFileSync(new URL("../snippets/go.json", import.meta.url)))).map((s) => s.prefix);
+  const prefixes = functionSnippets.map((s) => s.prefix);
+  assert.equal(new Set(prefixes).size, prefixes.length, "duplicate function snippet prefix");
+  for (const p of prefixes) assert.ok(!statics.includes(p), `${p} is also in snippets/go.json`);
+});
+
+test("the snippets a validated form's action is written with", () => {
+  const byPrefix = Object.fromEntries(functionSnippets.map((s) => [s.prefix, s]));
+  for (const prefix of ["cpagea", "cactionf", "cvalid", "cvf", "cvfail", "cflashadd", "credirect", "cdataf", "cmeta", "cjsonld",
+    "cslotr", "cstate", "cnotfound", "c404f", "chtml", "cregall", "ccookie", "cparam"]) {
+    assert.ok(byPrefix[prefix], `missing ${prefix}`);
+  }
+  const action = byPrefix.cactionf.body.join("\n");
+  for (const want of ["validate.Form(rc)", "validate.Refuse(rc, v, rc.Page)", "flash.Add(", "rc.URL(", "collage.SeeOther("]) {
+    assert.ok(action.includes(want), `cactionf lacks ${want}`);
+  }
+  assert.ok(!action.includes(" any") && !byPrefix.cdataf.body.join("\n").includes("any,"), "typed, not any");
+});

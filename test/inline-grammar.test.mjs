@@ -116,3 +116,42 @@ test("a raw string declared without InlineHTML stays a Go string", () => {
   const tokens = tokenize(["const q string = `<p>not a template</p>`"]);
   assert.ok(!tokens.some(([, s]) => s.includes("meta.embedded.block.html")));
 });
+
+// A formatter, or a person, puts each argument on its own line; the template
+// is still the raw string among them.
+test("an inline fragment whose arguments are on lines of their own", () => {
+  const tokens = tokenize([
+    "row := collage.NewInlineFragment(",
+    "\t\"post-row\",",
+    "\t`",
+    "  <tr>{{slot \"cells\"}}</tr>`,",
+    ").Build()",
+  ]);
+  assert.ok(scopes(tokens, "<tr").includes("meta.embedded.block.html"), "the template is HTML");
+  assert.ok(scopes(tokens, "slot").includes("support.function.collage.core"));
+  assert.ok(scopes(tokens, "Build").includes("variable.other.go"), "Go resumes after the call");
+  assert.ok(!scopes(tokens, "Build").includes("meta.embedded.block.html"));
+});
+
+test("an inline fragment whose template starts on the next line", () => {
+  const tokens = tokenize(["collage.NewInlineFragment(\"x\",", "\t`<p>{{.T}}</p>`).Build()"]);
+  assert.ok(scopes(tokens, "<p").includes("meta.embedded.block.html"));
+  assert.ok(scopes(tokens, "Build").includes("variable.other.go"));
+});
+
+test("an inline fragment whose template is a constant ends at its parenthesis", () => {
+  const tokens = tokenize(["collage.NewInlineFragment(", "\tname(\"x\"),", "\trowHTML,", ")", "q := `<p>not a template</p>`"]);
+  assert.ok(!tokens.some(([, s]) => s.includes("meta.embedded.block.html")), "no HTML, and the call ends where it does");
+  assert.ok(tokens.some(([, s]) => s.includes("string.quoted.raw.go")), "a later raw string is a Go string again");
+});
+
+test("a const declared as InlineHTML whose raw string starts on the next line", () => {
+  const tokens = tokenize(["const row collage.InlineHTML =", "\t`<p>{{.T}}</p>`", "var x = 1"]);
+  assert.ok(scopes(tokens, "<p").includes("meta.embedded.block.html"));
+  assert.ok(!tokens.some(([t, s]) => t.includes("x = 1") && s.includes("meta.embedded.block.html")));
+});
+
+test("an InlineHTML value that is not a raw string ends the declaration", () => {
+  const tokens = tokenize(["var row collage.InlineHTML = build()", "q := `<p>not a template</p>`"]);
+  assert.ok(!tokens.some(([, s]) => s.includes("meta.embedded.block.html")));
+});

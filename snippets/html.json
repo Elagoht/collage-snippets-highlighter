@@ -20,42 +20,58 @@
   "collage slot": {
     "prefix": "cslot",
     "description": "collage: render the fragments bound to a slot",
-    "body": ["{{slot \"${1:name}\"}}"]
+    "body": [
+      "{{slot \"${1:name}\"}}"
+    ]
   },
   "collage hoist": {
     "prefix": "choist",
     "description": "collage: where hoisted content lands",
-    "body": ["{{hoist \"${1:head}\"}}"]
+    "body": [
+      "{{hoist \"${1:head}\"}}"
+    ]
   },
   "collage asset": {
     "prefix": "casset",
     "description": "collage: a mounted file's content-addressed URL",
-    "body": ["{{asset \"/static/${1:app.js}\"}}"]
+    "body": [
+      "{{asset \"/static/${1:app.js}\"}}"
+    ]
   },
   "collage stylesheet": {
     "prefix": "ccss",
     "description": "collage: hoist a stylesheet into the head",
-    "body": ["{{stylesheet \"/static/${1:app.css}\"}}"]
+    "body": [
+      "{{stylesheet \"/static/${1:app.css}\"}}"
+    ]
   },
   "collage script": {
     "prefix": "cjs",
     "description": "collage: a script tag for a mounted file, by its content-addressed URL",
-    "body": ["<script src=\"{{asset \"/static/${1:app.js}\"}}\" defer></script>"]
+    "body": [
+      "<script src=\"{{asset \"/static/${1:app.js}\"}}\" defer></script>"
+    ]
   },
   "collage link": {
     "prefix": "clink",
     "description": "collage: a link to a page by the name it was registered under",
-    "body": ["<a href=\"{{pageURL \"${1:name}\"}}\">${2:text}</a>"]
+    "body": [
+      "<a href=\"{{pageURL \"${1:name}\"}}\">${2:text}</a>"
+    ]
   },
   "collage page URL": {
     "prefix": "curl",
     "description": "collage: a page's URL by name",
-    "body": ["{{pageURL \"${1:name}\"}}"]
+    "body": [
+      "{{pageURL \"${1:name}\"}}"
+    ]
   },
   "collage fragment URL": {
     "prefix": "cfurl",
     "description": "collage: a fragment path's URL by name",
-    "body": ["{{fragmentURL \"${1:page}\" \"${2:fragment}\"}}"]
+    "body": [
+      "{{fragmentURL \"${1:page}\" \"${2:fragment}\"}}"
+    ]
   },
   "collage language switcher": {
     "prefix": "clang",
@@ -81,34 +97,53 @@
   "collage if": {
     "prefix": "cif",
     "description": "Go template: if",
-    "body": ["{{if ${1:.}}}$0{{end}}"]
+    "body": [
+      "{{if ${1:.}}}$0{{end}}"
+    ]
   },
   "collage if else": {
     "prefix": "cife",
     "description": "Go template: if … else",
-    "body": ["{{if ${1:.}}}", "  $2", "{{else}}", "  $0", "{{end}}"]
+    "body": [
+      "{{if ${1:.}}}",
+      "  $2",
+      "{{else}}",
+      "  $0",
+      "{{end}}"
+    ]
   },
   "collage range": {
     "prefix": "crange",
     "description": "Go template: range over a list",
-    "body": ["{{range ${1:.Items}}}", "  $0", "{{end}}"]
+    "body": [
+      "{{range ${1:.Items}}}",
+      "  $0",
+      "{{end}}"
+    ]
   },
   "collage with": {
     "prefix": "cwith",
     "description": "Go template: with — render when the value is not empty",
-    "body": ["{{with ${1:.Value}}}$0{{end}}"]
+    "body": [
+      "{{with ${1:.Value}}}$0{{end}}"
+    ]
   },
   "collage define": {
     "prefix": "cdefine",
     "description": "Go template: define a named template",
-    "body": ["{{define \"${1:name}\"}}", "  $0", "{{end}}"]
+    "body": [
+      "{{define \"${1:name}\"}}",
+      "  $0",
+      "{{end}}"
+    ]
   },
   "collage comment": {
     "prefix": "ccomment",
     "description": "Go template: a comment, not sent to the browser",
-    "body": ["{{/* $0 */}}"]
+    "body": [
+      "{{/* $0 */}}"
+    ]
   },
-
   "collage-live section": {
     "prefix": "clive",
     "description": "collage-live: an element kept current from a fragment path",
@@ -121,7 +156,9 @@
   "collage-live client": {
     "prefix": "cliveclient",
     "description": "collage-live: the client script, in the layout's head",
-    "body": ["{{liveClient}}"]
+    "body": [
+      "{{liveClient}}"
+    ]
   },
   "collage-flash messages": {
     "prefix": "cflash",
@@ -135,12 +172,16 @@
   "collage-i18n translation": {
     "prefix": "ct",
     "description": "collage-i18n: a translation in the render's locale",
-    "body": ["{{t \"${1:key}\"}}"]
+    "body": [
+      "{{t \"${1:key}\"}}"
+    ]
   },
   "collage-i18n plural": {
     "prefix": "ctn",
     "description": "collage-i18n: the plural form for a count",
-    "body": ["{{tn \"${1:key}\" ${2:.Count}}}"]
+    "body": [
+      "{{tn \"${1:key}\" ${2:.Count}}}"
+    ]
   },
   "collage-validate field": {
     "prefix": "cfield",
@@ -154,31 +195,124 @@
   "collage-honeypot": {
     "prefix": "choney",
     "description": "collage-honeypot: the decoy field that stops spam bots, inside a form",
-    "body": ["{{honeypot}}"]
+    "body": [
+      "{{honeypot}}"
+    ]
   },
   "collage-secure inline script": {
     "prefix": "cnonce",
     "description": "collage-secure: an inline script allowed by the Content-Security-Policy",
-    "body": ["<script nonce=\"{{cspNonce}}\">", "  $0", "</script>"]
+    "body": [
+      "<script nonce=\"{{cspNonce}}\">",
+      "  $0",
+      "</script>"
+    ]
   },
   "collage-toc": {
     "prefix": "ctoc",
     "description": "collage-toc: a table of contents and the reading time",
-    "body": ["<p>{{readingTime}}</p>", "{{toc}}"]
+    "body": [
+      "<p>{{readingTime}}</p>",
+      "{{toc}}"
+    ]
   },
   "collage-search box": {
     "prefix": "csearch",
     "description": "collage-search: the search form",
-    "body": ["{{searchBox}}"]
+    "body": [
+      "{{searchBox}}"
+    ]
   },
   "collage-highlight code": {
     "prefix": "ccode",
     "description": "collage-highlight: highlighted code",
-    "body": ["{{highlight ${1:.Code} \"${2:go}\"}}"]
+    "body": [
+      "{{highlight ${1:.Code} \"${2:go}\"}}"
+    ]
   },
   "collage-bundle script": {
     "prefix": "cbundle",
     "description": "collage-bundle: a script esbuild bundled",
-    "body": ["<script src=\"{{bundle \"${1:app.js}\"}}\" defer></script>"]
+    "body": [
+      "<script src=\"{{bundle \"${1:app.js}\"}}\" defer></script>"
+    ]
+  },
+  "collage form with validation": {
+    "prefix": "cformv",
+    "description": "A form collage-validate checks: a field with its value and message, the form's own message, the forgery token and a honeypot",
+    "body": [
+      "<form method=\"post\" action=\"{{pageURL \"${1:login}\"}}\">",
+      "  <label>",
+      "    ${2:Email}",
+      "    <input name=\"${3:email}\" type=\"${4:email}\" value=\"{{fieldValue \"$3\"}}\" required>",
+      "  </label>",
+      "  {{with fieldError \"$3\"}}<small class=\"field-error\">{{.}}</small>{{end}}",
+      "  $0",
+      "  {{with fieldError \"form\"}}<small class=\"field-error\">{{.}}</small>{{end}}",
+      "  {{csrfToken}}",
+      "  {{honeypot}}",
+      "  <button type=\"submit\">${5:Send}</button>",
+      "</form>"
+    ]
+  },
+  "collage-validate textarea": {
+    "prefix": "cfieldt",
+    "description": "collage-validate: a textarea with the submitted value and its message",
+    "body": [
+      "<label for=\"${1:body}\">${2:Text}</label>",
+      "<textarea id=\"$1\" name=\"$1\"${3: maxlength=\"140\"}{{with fieldError \"$1\"}} aria-invalid=\"true\" aria-describedby=\"$1-error\"{{end}}>{{fieldValue \"$1\"}}</textarea>",
+      "{{with fieldError \"$1\"}}<p id=\"$1-error\" class=\"field-error\">{{.}}</p>{{end}}"
+    ]
+  },
+  "collage-validate form error": {
+    "prefix": "cferr",
+    "description": "collage-validate: the message a handler gave the whole form, with v.Fail(\"form\", …)",
+    "body": [
+      "{{with fieldError \"${1:form}\"}}<p class=\"field-error\" role=\"alert\">{{.}}</p>{{end}}"
+    ]
+  },
+  "collage action form": {
+    "prefix": "caform",
+    "description": "A form posting to an action at a URL of its own, by the action's name",
+    "body": [
+      "<form method=\"post\" action=\"{{actionURL \"${1:logout}\"}}\">",
+      "  {{csrfToken}}",
+      "  <button type=\"submit\">${2:Log out}</button>",
+      "</form>"
+    ]
+  },
+  "collage action URL": {
+    "prefix": "caurl",
+    "description": "An action's URL by name, in the page's locale",
+    "body": [
+      "{{actionURL \"${1:name}\"}}"
+    ]
+  },
+  "collage linked list": {
+    "prefix": "crangelink",
+    "description": "A list of links to a page with a parameter, and what shows when there is nothing",
+    "body": [
+      "{{range .${1:Stories}}}",
+      "  <a href=\"{{pageURL \"${2:story}\" \"${3:id}\" .${4:ID}}}\">{{.${5:Title}}}</a>",
+      "{{else}}",
+      "  <p>${6:Nothing yet.}</p>",
+      "{{end}}"
+    ]
+  },
+  "collage-flash toasts": {
+    "prefix": "cflasht",
+    "description": "collage-flash: the messages as toasts that remove themselves, with a script collage-secure's policy allows",
+    "body": [
+      "<div class=\"flash-stack\" aria-live=\"polite\">",
+      "  {{range flashes}}",
+      "  <div class=\"flash flash-{{.Kind}}\" role=\"status\">{{.Text}}</div>",
+      "  {{end}}",
+      "</div>",
+      "<script nonce=\"{{cspNonce}}\">",
+      "  document.querySelectorAll(\".flash\").forEach((toast) => {",
+      "    setTimeout(() => toast.remove(), ${1:4000});",
+      "  });",
+      "</script>"
+    ]
   }
 }

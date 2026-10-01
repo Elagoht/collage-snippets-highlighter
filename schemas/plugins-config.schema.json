@@ -550,7 +550,7 @@
       "properties": {
         "baseURL": {
           "type": "string",
-          "description": "BaseURL is the site's origin, \"https://example.com\": IndexNow is told absolute URLs, and the application cannot know its own host. Required."
+          "description": "BaseURL is the site's origin, \"https://example.com\": IndexNow is told absolute URLs, and the application cannot know its own host. Falls back to the application's Config.BaseURL when empty."
         },
         "batchSize": {
           "type": "integer",
@@ -681,7 +681,7 @@
       "properties": {
         "baseURL": {
           "type": "string",
-          "description": "BaseURL is the site's origin, \"https://example.com\". Required: a canonical URL and an og:image are absolute, and the application cannot know its own host."
+          "description": "BaseURL is the site's origin, \"https://example.com\". A canonical URL and an og:image are absolute, and the application cannot know its own host; falls back to the application's Config.BaseURL when empty."
         },
         "defaultImage": {
           "type": "string",
@@ -1206,7 +1206,7 @@
       "properties": {
         "baseURL": {
           "type": "string",
-          "description": "BaseURL is the site's origin, as a reader's browser reaches it: \"https://example.com\". A sitemap lists absolute URLs, and the application cannot know which host it is served under. Required."
+          "description": "BaseURL is the site's origin, as a reader's browser reaches it: \"https://example.com\". A sitemap lists absolute URLs, and the application cannot know which host it is served under. Falls back to the application's Config.BaseURL when left empty; required only when that is also unset."
         },
         "exclude": {
           "type": "array",

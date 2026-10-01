@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.2
+
+- `data-collage-transition`, collage-live v0.4.0's attribute: each answer goes in
+  inside a view transition, unless the reader prefers reduced motion.
+- plugins-config.json: `baseURL` in indexnow v0.1.3, meta v0.1.4 and sitemap
+  v0.1.3 falls back to collage's `Config.BaseURL` when empty.
+
 ## 0.6.1
 
 - plugins-config.json: i18n v0.2.0's `strict`, which refuses to start while the

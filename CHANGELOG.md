@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.0
+
+- **The Go snippets are rewritten** for the layout collage v0.40.0 scaffolds and
+  `collage add` writes: `pages/<area>`, `fragments/pages/<area>`,
+  `fragments/layouts` with `Master()`, `actions/<area>.go` and their handlers in
+  `actions/funcs/`. Each brings its package clause and imports, and is typed with
+  a view struct. The prefixes are families: `cpage*`, `cfrag*`, `clayout*`,
+  `cact*` (`cact`, `cactp`, `cactf`, `cactj`, `cactr`), `cdoc*`, `ctest*` — see
+  the README. New: `cpagep`, `cfrag404`, `cvfields`, `cdocs`, `cservice`, `cerrs`,
+  `ctest` and `ctestf` (collagetest), `chook`.
+- **Renamed:** `cpagef` → `cpage`, `cinlinef` → `cfrag`, `clayoutf` → `clayout`,
+  `cguardf` → `cguard`, `cactionf` → `cactf`, `cdataf` → `cfragd`, `cslotr` →
+  `cfrags`, `c404f` → `cpage404`, `cregall` → `creg`, `cvalid` → `cval`,
+  `cflashadd` → `cflash`, `credirect` → `credir`, `cbefore`/`cafter` → `chook`.
+  The expression snippets that only built a value (`cpage`, `cfrag`, `cinline`,
+  `caction`, …) are gone: every Go snippet writes a whole declaration or the lines
+  of a handler.
+- `curlp`: a page's URL with its `{parameter}` filled.
+
 ## 0.6.2
 
 - `data-collage-transition`, collage-live v0.4.0's attribute: each answer goes in

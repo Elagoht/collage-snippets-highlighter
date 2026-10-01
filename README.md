@@ -5,7 +5,7 @@ Snippets, template highlighting, completion and configuration validation for
 pages — for collage's own template functions and those of its
 [published plugins](https://collage.furkanbaytekin.dev/en/docs/plugins/).
 
-- **Snippets** for Go (`cpage`, `cfragd`, `caction`, `cplugin` …) and for templates
+- **Snippets** for Go, in the layout `collage new` scaffolds (`cpage`, `cfrag`, `cact`, `cactf` …), and for templates
   (`clayout`, `cslot`, `cform`, `clive` …).
 - **Highlighting** of `{{ … }}` inside HTML: collage's functions, the plugins'
   functions and Go's own builtins in their own colours, fields, variables, strings
@@ -32,53 +32,35 @@ pages — for collage's own template functions and those of its
 
 ### Go
 
-| Prefix | |
-| --- | --- |
-| `cpage` | a page with a path and a content fragment |
-| `cfrag` | a fragment |
-| `cinline` | an inline fragment — its template in the Go string |
-| `cfragd` | a fragment with a data handler returning data and tags |
-| `cfrags` | a fragment with a child bound into a slot |
-| `cload` | a typed data handler, `collage.Load` |
-| `ceffect` | a data handler that only declares things for the page |
-| `ccached` | `collage.Cached`: shared across renders until a TTL or a tag |
-| `conce` | `collage.Once`: fetched once per render |
-| `caction` | a form action: 422 to refuse, a redirect to accept |
-| `cdoc` | a document at the site's root |
-| `creg` | register a page |
-| `cinval` | invalidate tags |
-| `cmw` | middleware with `app.Use` |
-| `cplugin` | a plugin skeleton |
-| `cbefore`, `cafter` | a plugin's BeforeRender and AfterRender hooks |
-
-#### With their imports
-
-These bring what the file needs above them: in a file with no `package` clause
-they add one — the package the other `.go` files beside it declare, `main` beside
-`go.mod`, otherwise the directory's name as an identifier (`auth-layout` →
-`authlayout`) — and they add the imports they use that the file lacks,
-collage-validate's or collage-flash's among them. A file that has its package and
-imports is left as it is. They are offered in collage projects (see
-`collage.completions`), and not inside inline HTML, where HTML's are.
+Every Go snippet brings what the file needs to compile: its package clause when it
+has none, and the imports it lacks. They follow the layout `collage new` scaffolds
+and `collage add` writes — `pages/<area>/` builds a page, `fragments/pages/<area>/`
+its content, `fragments/layouts/` the layouts, `actions/<area>.go` the actions and
+`actions/funcs/<area>.go` their handlers. Exported functions come with a one-line
+comment, a signature of several parameters takes a line for each, and data is a
+typed view, never `any`.
 
 | Prefix | |
 | --- | --- |
-| `cpagef` | a function returning a page in a layout chain (`WithLayouts`) |
-| `cpagea` | a function returning a page with layouts and its form's action (`WithActionFor`) |
-| `cfragf` | a function returning a fragment with a template file |
-| `cinlinef` | a function returning an inline fragment |
-| `chtml` | a `collage.InlineHTML` constant |
-| `clayoutf` | a function returning a layout, with `WithTitle` |
-| `cguardf` | a guard: `nil` lets the request through, a decision redirects or refuses it |
-| `cactionf` | a function returning a form's action: validated, a flash message, a redirect by name |
-| `cvalid`, `cvf`, `cvfail` | collage-validate: check a form, one field's rule, refuse it for a reason of the handler's |
-| `cflashadd` | collage-flash: a message for the next page |
-| `credirect`, `ccookie` | a redirect to a page by name (`rc.URL`), a redirect setting a cookie |
-| `cdataf` | a function returning a data handler that loads a typed view |
+| `cpage`, `cpagea`, `cpagep`, `cpage404` | a page; with its form's action (`WithActionFor`); at a path with a `{parameter}`; the not-found page |
+| `cfrag` | a page's content: an inline template, its view struct, a typed `collage.Load` handler |
+| `cfragf`, `cfragd`, `cfrags`, `cfrag404` | a fragment with a template file; whose handler takes a service; with a slot filled per render; the not-found content |
+| `chtml`, `cload`, `cstate` | a `collage.InlineHTML` constant; a typed data handler; a typed value shared within a render |
+| `clayout`, `clayoutg` | a layout; a layout with a guard |
+| `cguard` | a guard: `nil` lets the request through, a decision redirects |
+| `cact`, `cactp` | an action builder: attached to its page; at a URL of its own |
+| `cactf`, `cactj`, `cactr` | an action handler: a validated form with a flash and a redirect; JSON that invalidates tags; the page rendered again |
+| `cval`, `cvf`, `cvfail`, `cvfields` | collage-validate: check a form; one field's rule; refuse for the handler's reason; refuse with a service's messages by field |
+| `cflash`, `credir`, `ccookie` | collage-flash's message; a redirect by page name; a redirect setting a cookie |
+| `cparam`, `cnotfound` | an integer route parameter; a missing record as a 404 |
 | `cmeta`, `cjsonld` | collage-meta: title, description, canonical; collage-jsonld: an Article |
-| `cslotr`, `cstate` | a slot resolver; a typed value fragments share within a render |
-| `cnotfound`, `c404f` | a missing record as a 404; a not-found page |
-| `cregall`, `cparam` | register a list of pages; an integer route parameter |
+| `cdoc`, `cdocs` | a document rendered by a handler; one with a fixed body at the site's root |
+| `cservice`, `cerrs` | `data/<domain>`: a service; its errors and the form field each is shown beside |
+| `creg` | `routes.go`'s `register`: one `app.Register` call and the not-found page |
+| `ccached`, `conce`, `cinval` | `collage.Cached`; `collage.Once`; an action's `InvalidateTags` |
+| `cmw` | middleware with `app.Use` |
+| `ctest`, `ctestf` | collagetest: a page renders; a form submitted with its token, and where it redirects |
+| `cplugin`, `chook` | a plugin skeleton; its AfterRender or BeforeRender hook |
 
 ### Templates
 
@@ -87,7 +69,7 @@ imports is left as it is. They are offered in collage projects (see
 | `clayout` | a layout: the head where hoisted content lands, the content slot |
 | `cslot`, `choist` | `{{slot}}`, `{{hoist}}` |
 | `casset`, `ccss`, `cjs` | a mounted file's URL, a hoisted stylesheet, a script tag |
-| `clink`, `curl`, `cfurl` | a link by page name, `{{pageURL}}`, `{{fragmentURL}}` |
+| `clink`, `curl`, `curlp`, `cfurl` | a link by page name, `{{pageURL}}`, with a parameter, `{{fragmentURL}}` |
 | `clang` | a language switcher with `{{localeURL}}` |
 | `cform` | a form posting to an action, with its forgery token |
 | `cformv` | a form collage-validate checks: a field, the form's own message, the token and a honeypot |

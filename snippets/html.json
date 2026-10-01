@@ -66,6 +66,13 @@
       "{{pageURL \"${1:name}\"}}"
     ]
   },
+  "collage page URL with a parameter": {
+    "prefix": "curlp",
+    "description": "collage: a page's URL by name, its {parameter} filled — a story by its id",
+    "body": [
+      "{{pageURL \"${1:story}\" \"${2:id}\" .${3:ID}}}"
+    ]
+  },
   "collage fragment URL": {
     "prefix": "cfurl",
     "description": "collage: a fragment path's URL by name",

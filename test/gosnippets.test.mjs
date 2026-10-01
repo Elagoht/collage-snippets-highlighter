@@ -74,16 +74,17 @@ test("an aliased collage import counts as imported", () => {
 
 test("the function snippets", () => {
   const byPrefix = Object.fromEntries(functionSnippets.map((s) => [s.prefix, s]));
-  for (const prefix of ["cpagef", "cfragf", "cinlinef", "clayoutf", "cguardf"]) {
+  for (const prefix of ["cpage", "cfragf", "cfrag", "clayout", "cguard"]) {
     assert.ok(byPrefix[prefix], `missing ${prefix}`);
     assert.ok(byPrefix[prefix].imports.includes(COLLAGE_IMPORT), `${prefix} imports collage`);
   }
-  assert.ok(byPrefix.cpagef.body.join("\n").includes("WithLayouts("), "cpagef uses WithLayouts");
-  assert.ok(!byPrefix.cpagef.body.join("\n").includes("WithLayout("), "cpagef has no WithLayout");
-  assert.ok(byPrefix.cinlinef.body.join("\n").includes("NewInlineFragment("));
-  assert.deepEqual([...byPrefix.cguardf.imports].sort(), ["context", "net/http", COLLAGE_IMPORT].sort());
-  assert.ok(byPrefix.cfragf.body[0].startsWith("func "), "cfragf is a function");
-  assert.ok(byPrefix.cfragf.body[0].includes("*collage.Fragment"), "cfragf returns a fragment");
+  assert.ok(byPrefix.cpage.body.join("\n").includes("WithLayouts("), "cpage uses WithLayouts");
+  assert.ok(byPrefix.cpage.body.join("\n").includes("layouts.Master()"), "cpage wraps the scaffold's layout");
+  assert.ok(byPrefix.cfrag.body.join("\n").includes("NewInlineFragment("));
+  assert.ok(byPrefix.cfrag.body.join("\n").includes("collage.InlineHTML"), "cfrag keeps its markup in an InlineHTML const");
+  assert.deepEqual([...byPrefix.cguard.imports].sort(), ["context", "net/http", COLLAGE_IMPORT].sort());
+  const fragf = byPrefix.cfragf.body.find((l) => l.startsWith("func "));
+  assert.ok(fragf && fragf.includes("*collage.Fragment"), "cfragf is a function returning a fragment");
 });
 
 // expand fills every placeholder with its default, as accepting a snippet with
@@ -107,7 +108,7 @@ test("every function snippet is Go that parses, and uses each import it adds", a
   const { execFileSync } = await import("node:child_process");
   for (const s of functionSnippets) {
     const body = expand(s.body);
-    const topLevel = /^(func|const|type|var) /.test(body);
+    const topLevel = /^(\/\/[^\n]*\n)*(func|const|type|var) /.test(body);
     const imports = s.imports.map((p) => `import "${p}"`).join("\n");
     const src = `package p\n\n${imports}\n\n${topLevel ? body : `func _() (any, error) {\n${body}\n}`}\n`;
     try {
@@ -122,23 +123,33 @@ test("every function snippet is Go that parses, and uses each import it adds", a
   }
 });
 
-test("function snippet prefixes are unique, and apart from the static Go snippets", async () => {
+test("function snippet prefixes are unique, and there are no static Go snippets beside them", async () => {
   const { readFileSync } = await import("node:fs");
-  const statics = Object.values(JSON.parse(readFileSync(new URL("../snippets/go.json", import.meta.url)))).map((s) => s.prefix);
   const prefixes = functionSnippets.map((s) => s.prefix);
   assert.equal(new Set(prefixes).size, prefixes.length, "duplicate function snippet prefix");
-  for (const p of prefixes) assert.ok(!statics.includes(p), `${p} is also in snippets/go.json`);
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url)));
+  assert.ok(!pkg.contributes.snippets.some((s) => s.language === "go"), "a static Go snippet file is contributed");
+});
+
+test("exported functions are documented, and no snippet is untyped", () => {
+  for (const s of functionSnippets) {
+    s.body.forEach((line, i) => {
+      if (/^func (\(p \*Plugin\) )?[A-Z$]/.test(line) && !/^func \(p \*Plugin\) (Name|Version|Shutdown)\(/.test(line) && !/^func Test/.test(line) && !/^func New\(opts/.test(line)) {
+        assert.ok(i > 0 && s.body[i - 1].startsWith("//"), `${s.prefix}: ${line} has no comment above it`);
+      }
+    });
+    assert.ok(!/\bany\b/.test(s.body.join("\n")), `${s.prefix} uses any`);
+  }
 });
 
 test("the snippets a validated form's action is written with", () => {
   const byPrefix = Object.fromEntries(functionSnippets.map((s) => [s.prefix, s]));
-  for (const prefix of ["cpagea", "cactionf", "cvalid", "cvf", "cvfail", "cflashadd", "credirect", "cdataf", "cmeta", "cjsonld",
-    "cslotr", "cstate", "cnotfound", "c404f", "chtml", "cregall", "ccookie", "cparam"]) {
+  for (const prefix of ["cpagea", "cact", "cactp", "cactf", "cval", "cvf", "cvfail", "cvfields", "cflash", "credir", "cfragd", "cmeta", "cjsonld",
+    "cfrags", "cstate", "cnotfound", "cpage404", "cfrag404", "chtml", "creg", "ccookie", "cparam"]) {
     assert.ok(byPrefix[prefix], `missing ${prefix}`);
   }
-  const action = byPrefix.cactionf.body.join("\n");
+  const action = byPrefix.cactf.body.join("\n");
   for (const want of ["validate.Form(rc)", "validate.Refuse(rc, v, rc.Page)", "flash.Add(", "rc.URL(", "collage.SeeOther("]) {
-    assert.ok(action.includes(want), `cactionf lacks ${want}`);
+    assert.ok(action.includes(want), `cactf lacks ${want}`);
   }
-  assert.ok(!action.includes(" any") && !byPrefix.cdataf.body.join("\n").includes("any,"), "typed, not any");
 });

@@ -49,7 +49,7 @@ test("the plugins' functions match what they register", { skip: !existsSync(join
 });
 
 test("snippets are valid and every prefix is unique per language", () => {
-  for (const file of ["go", "html"]) {
+  for (const file of ["html"]) { // Go snippets are functionSnippets, in src/gosnippets.ts
     const snippets = JSON.parse(readFileSync(new URL(`../snippets/${file}.json`, import.meta.url)));
     const prefixes = Object.values(snippets).map((s) => s.prefix);
     assert.equal(new Set(prefixes).size, prefixes.length, `${file}: a prefix is used twice`);

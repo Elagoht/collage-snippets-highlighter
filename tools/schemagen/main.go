@@ -95,6 +95,7 @@ var decoders = map[string]func() *schema{
 	"elagoht/opti-image.Duration": durationOrNanoseconds,
 	"elagoht/cdnpurge.Duration":   durationOrNanoseconds,
 	"elagoht/ogimage.Duration":    durationOrNanoseconds,
+	"elagoht/tenant.Duration":     durationOrNanoseconds,
 	"elagoht/live.Duration": func() *schema {
 		return &schema{Type: "string", Pattern: durationPattern, Examples: []string{"30s", "5m"}}
 	},

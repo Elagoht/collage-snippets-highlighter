@@ -93,7 +93,7 @@
         "collage.inspect": {
           "type": "boolean",
           "default": true,
-          "description": "Run `go run . collage-inspect` in each collage project to learn its pages, fragments, slots and mounted files, for completion, diagnostics and go-to-definition. It runs the application's main, which builds the application without serving it."
+          "description": "Build each collage project with `go build -tags collage_dev` and run it with `collage-inspect` to learn its pages, fragments, slots and mounted files, for completion, diagnostics and go-to-definition. It runs the application's main, which builds the application without serving it."
         },
         "collage.goCommand": {
           "type": "string",

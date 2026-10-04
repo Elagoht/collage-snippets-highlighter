@@ -2,6 +2,19 @@
 
 ## 0.7.0
 
+- **Learning the project no longer fills the Go build cache.** It ran
+  `go run . collage-inspect` on every save of a Go file, and `go run` keeps the
+  linked program in the Go build cache, with the embedded `templates/` and
+  `static/` inside both it and the compiled main package: two more copies of
+  them per save, kept for five days — 67 MB a save with a 30 MB `static/`. It
+  now builds the way `collage dev` does since collage v0.46.0,
+  `go build -tags collage_dev` into a temporary file, and runs that with
+  `COLLAGE_DEV=1`, so the templates and static files are read from disk. A
+  project whose `main.go` still has the `//go:embed` lines keeps one copy a save
+  until it moves them into `embed.go`; `collage dev` says how. Running in
+  development mode also stops it leaving a `.cache/<hash>` directory of rendered
+  pages in the project with every save, and lets a plugin that needs production
+  settings only outside development, such as errortrack's DSN, be inspected.
 - **The Go snippets are rewritten** for the layout collage v0.40.0 scaffolds and
   `collage add` writes: `pages/<area>`, `fragments/pages/<area>`,
   `fragments/layouts` with `Master()`, `actions/<area>.go` and their handlers in

@@ -166,15 +166,19 @@ requires `github.com/Elagoht/collage`. The `collage.completions` setting makes i
 | Setting | Default | |
 | --- | --- | --- |
 | `collage.completions` | `auto` | where completion and hover are offered |
-| `collage.inspect` | `true` | run `go run . collage-inspect` to learn the project |
+| `collage.inspect` | `true` | build the project and run `collage-inspect` to learn it |
 | `collage.diagnostics` | `warning` | how a name that does not exist is reported, or `off` |
 | `collage.goCommand` | `go` | the go command to run |
 
 ## Names from your project
 
 The extension asks the application what it is made of: in every folder whose
-`go.mod` requires collage it runs `go run . collage-inspect` (collage v0.27.0 or
-later, which a scaffolded `main.go` answers), and again whenever a Go file is saved.
+`go.mod` requires collage it builds the program with `go build -tags collage_dev`
+into a temporary file and runs it with `collage-inspect` and `COLLAGE_DEV=1`
+(collage v0.27.0 or later, which a scaffolded `main.go` answers), and again whenever
+a Go file is saved. The tag and the temporary file keep the Go build cache from
+gaining a copy of your templates and static files with every save, as `go run`
+would.
 The status bar shows what it learnt — `collage: 12 pages` — and a click refreshes it;
 the Collage output channel says why when it could not.
 

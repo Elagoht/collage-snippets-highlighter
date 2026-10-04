@@ -3,6 +3,8 @@
 // collage.json of every module it depends on says about itself.
 import * as vscode from "vscode";
 import * as cp from "node:child_process";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 
 export interface Inspection {
@@ -60,10 +62,19 @@ export class Project {
   }
 
   private async inspect(go: string): Promise<Inspection | undefined> {
+    // Built the way `collage dev` builds it (collage v0.46.0), not with `go run`:
+    // the collage_dev tag leaves the scaffold's embed.go out, and a build into a
+    // file of our own is not one the Go build cache keeps. `go run` stores the
+    // linked executable there, and the embedded templates and static files with
+    // the compiled main package: another copy of both on every save, kept for
+    // days. Built without the embedded copies, the program has to read them from
+    // disk, which is what development mode does.
+    const binary = path.join(os.tmpdir(), `collage-inspect-${process.pid}-${++builds}${process.platform === "win32" ? ".exe" : ""}`);
     try {
+      await exec(go, ["build", "-tags", "collage_dev", "-o", binary, "."], this.root, 120_000);
       // Runs the application's own main, which answers collage-inspect with
       // App.Inspect: the only way to know what it registers is to register it.
-      const out = await exec(go, ["run", ".", "collage-inspect"], this.root, 120_000);
+      const out = await exec(binary, ["collage-inspect"], this.root, 60_000, { COLLAGE_DEV: "1" });
       const inspection = JSON.parse(out) as Inspection;
       this.error = undefined;
       this.log.appendLine(`[${this.root}] inspected: ${inspection.pages.length} pages, ${inspection.fragments.length} fragments`);
@@ -72,6 +83,8 @@ export class Project {
       this.error = String(err instanceof Error ? err.message : err).split("\n").slice(0, 12).join("\n");
       this.log.appendLine(`[${this.root}] collage-inspect failed:\n${this.error}`);
       return undefined;
+    } finally {
+      await fs.rm(binary, { force: true });
     }
   }
 
@@ -132,9 +145,12 @@ function parseStream(text: string): { Path: string; Dir?: string }[] {
   return out;
 }
 
-function exec(cmd: string, args: string[], cwd: string, timeout: number): Promise<string> {
+/** Numbers the inspection builds, so two projects never build into one file. */
+let builds = 0;
+
+function exec(cmd: string, args: string[], cwd: string, timeout: number, env: Record<string, string> = { COLLAGE_DEV: "" }): Promise<string> {
   return new Promise((resolve, reject) => {
-    cp.execFile(cmd, args, { cwd, timeout, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, COLLAGE_DEV: "" } }, (err, stdout, stderr) => {
+    cp.execFile(cmd, args, { cwd, timeout, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, ...env } }, (err, stdout, stderr) => {
       if (err) reject(new Error(`${cmd} ${args.join(" ")}: ${stderr || err.message}`));
       else resolve(stdout);
     });

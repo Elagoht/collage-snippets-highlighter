@@ -31,6 +31,11 @@
   `caction`, …) are gone: every Go snippet writes a whole declaration or the lines
   of a handler.
 - `curlp`: a page's URL with its `{parameter}` filled.
+- `oauthLogin`, collage-oauth's: the path that signs the reader in with a
+  provider, completed and coloured like the other plugin functions.
+- plugins-config.json: the schema knows errortrack, oauth, ogimage and tenant, and
+  takes the current settings and descriptions of cdnpurge, indexnow, meta, robots,
+  secure and sitemap.
 
 ## 0.6.2
 

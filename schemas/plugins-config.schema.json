@@ -215,7 +215,7 @@
         },
         "baseURL": {
           "type": "string",
-          "description": "BaseURL is the public origin the CDN serves the site at, \"https://example.com\": collage names paths, and a CDN purges URLs. Required."
+          "description": "BaseURL is the public origin the CDN serves the site at, \"https://example.com\": collage names paths, and a CDN purges URLs. Optional: without it the purge uses Config.BaseURL, or, on a site served on several hosts, each host's origin from a collage.OriginResolver plugin."
         },
         "cloudflare": {
           "type": "object",
@@ -351,6 +351,75 @@
       "type": "object",
       "description": "A collage plugin that shows a small panel at the bottom of every page in development. It takes no configuration from JSON: it is configured in Go.",
       "markdownDescription": "A collage plugin that shows a small panel at the bottom of every page in development.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)\n\nIt takes no configuration from JSON: it is configured in Go.",
+      "additionalProperties": false
+    },
+    "elagoht/errortrack": {
+      "type": "object",
+      "description": "Package errortrack sends server errors (5xx and panics) to Sentry, or any service speaking the Sentry protocol, with the standard library alone.",
+      "properties": {
+        "dsnEnv": {
+          "type": "string",
+          "description": "name of the environment variable holding the DSN"
+        },
+        "environment": {
+          "type": "string",
+          "description": "default \"development\" in DevMode, else \"production\""
+        },
+        "inDevelopment": {
+          "type": "boolean",
+          "description": "default false: nothing is sent in development"
+        },
+        "minStatus": {
+          "type": "integer",
+          "description": "default 500; panics are always sent"
+        },
+        "perMinute": {
+          "type": "integer",
+          "description": "events sent per minute at most, default 60"
+        },
+        "queueSize": {
+          "type": "integer",
+          "description": "default 100"
+        },
+        "release": {
+          "type": "string",
+          "description": "default host.BuildID()"
+        },
+        "sampleRate": {
+          "type": "number",
+          "description": "fraction sent, (0, 1]; 0 (unset) means 1"
+        },
+        "sendIP": {
+          "type": "boolean",
+          "description": "the client address"
+        },
+        "sendPath": {
+          "type": "boolean",
+          "description": "raw path instead of the route pattern, and the Referer's path"
+        },
+        "sendQuery": {
+          "type": "boolean",
+          "description": "query values instead of \"[filtered]\""
+        },
+        "timeout": {
+          "description": "per send, default \"5s\"",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
+          ]
+        }
+      },
+      "markdownDescription": "Package errortrack sends server errors (5xx and panics) to Sentry, or any service speaking the Sentry protocol, with the standard library alone.\n\n[collage-errortrack](https://github.com/Elagoht/collage-errortrack)",
       "additionalProperties": false
     },
     "elagoht/favicon": {
@@ -550,7 +619,7 @@
       "properties": {
         "baseURL": {
           "type": "string",
-          "description": "BaseURL is the site's origin, \"https://example.com\": IndexNow is told absolute URLs, and the application cannot know its own host. Falls back to the application's Config.BaseURL when empty."
+          "description": "BaseURL is the site's origin, \"https://example.com\": IndexNow is told absolute URLs, and the application cannot know its own host. When set it is used for every URL. When empty, each URL takes the origin of the host it was cached under: a plugin implementing collage.OriginResolver (elagoht/tenant) names it, else the application's Config.BaseURL."
         },
         "batchSize": {
           "type": "integer",
@@ -681,7 +750,7 @@
       "properties": {
         "baseURL": {
           "type": "string",
-          "description": "BaseURL is the site's origin, \"https://example.com\". A canonical URL and an og:image are absolute, and the application cannot know its own host; falls back to the application's Config.BaseURL when empty."
+          "description": "BaseURL is the site's origin, \"https://example.com\". A canonical URL and an og:image are absolute, and the application cannot know its own host. When empty, URLs follow the application's Config.BaseURL, or per request the origin an OriginResolver plugin gives the request's host."
         },
         "defaultImage": {
           "type": "string",
@@ -738,6 +807,78 @@
       "markdownDescription": "A collage plugin that strips whitespace and comments from what an application serves: rendered pages, documents, and mounted assets.\n\n[collage-minimizer](https://github.com/Elagoht/collage-minimizer)",
       "additionalProperties": false
     },
+    "elagoht/oauth": {
+      "type": "object",
+      "description": "Package oauth signs a reader in with an OpenID Connect provider through elagoht/session, and keeps the provider's API tokens sealed and refreshed.",
+      "properties": {
+        "afterLogin": {
+          "type": "string",
+          "description": "AfterLogin is where a sign-in without a next ends. Default \"/\"."
+        },
+        "errorPath": {
+          "type": "string",
+          "description": "ErrorPath is a page given ?error=\u003ccode\u003e when a sign-in fails. Empty means the built-in status pages."
+        },
+        "key": {
+          "type": "string",
+          "description": "KeyHex is Key, hex-encoded, as configuration carries it. When both are set, KeyHex wins."
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Prefix is where the login routes live: {prefix}/{provider}/login and {prefix}/{provider}/callback. It starts with \"/\". Default \"/auth\"."
+        },
+        "previousKeys": {
+          "type": "array",
+          "description": "PreviousKeysHex is PreviousKeys, hex-encoded, as configuration carries it.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "providers": {
+          "type": "array",
+          "description": "Providers are the identity providers a reader may sign in with. At least one.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "clientID": {
+                "type": "string",
+                "description": "ClientID is the application's ID at the provider. Required."
+              },
+              "clientSecretEnv": {
+                "type": "string",
+                "description": "ClientSecretEnv names the environment variable that holds the client secret."
+              },
+              "issuer": {
+                "type": "string",
+                "description": "Issuer is the OpenID Connect issuer. With a Preset it replaces the preset's issuer (one Microsoft tenant) and must then be matched exactly. https, or http only to localhost or a loopback IP."
+              },
+              "name": {
+                "type": "string",
+                "description": "Name is the URL segment: {prefix}/{name}/login. Unique."
+              },
+              "offline": {
+                "type": "boolean",
+                "description": "Offline asks the provider for a refresh token: the preset's way, or the offline_access scope when there is no preset."
+              },
+              "preset": {
+                "type": "string",
+                "description": "Preset fills the issuer and the provider's own parameters: \"google\", \"microsoft\" or \"gitlab\"."
+              },
+              "scopes": {
+                "type": "array",
+                "description": "Scopes are asked for besides \"openid email profile\".",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "markdownDescription": "Package oauth signs a reader in with an OpenID Connect provider through elagoht/session, and keeps the provider's API tokens sealed and refreshed.\n\n[collage-oauth](https://github.com/Elagoht/collage-oauth)",
+      "additionalProperties": false
+    },
     "elagoht/offline": {
       "type": "object",
       "description": "A collage plugin that serves a service worker, so the pages a visitor has read open again without a network.",
@@ -777,6 +918,100 @@
         }
       },
       "markdownDescription": "A collage plugin that serves a service worker, so the pages a visitor has read open again without a network.\n\n[collage-offline](https://github.com/Elagoht/collage-offline)",
+      "additionalProperties": false
+    },
+    "elagoht/ogimage": {
+      "type": "object",
+      "description": "A collage plugin that draws each page's share card — the image a link is shown with on X, LinkedIn, Slack and in messengers — from an HTML template, in pure Go, and serves it at a URL made from its content.",
+      "properties": {
+        "cardDir": {
+          "type": "string",
+          "description": "CardDir is the directory under Root that holds card templates. Every .html file in it is parsed at startup, and a name passed to Set is one of them: \"og/post.html\". Defaults to \"og\"."
+        },
+        "default": {
+          "type": "string",
+          "description": "Default is the card template for every page that sets no card of its own, drawn from the page's title and description. Empty: such a page gets no card."
+        },
+        "dir": {
+          "type": "string",
+          "description": "Dir is where cards and what they are made of are kept across restarts. Empty keeps them in memory only, which is wrong with a disk page cache: a page cached before a restart names a card the restarted process cannot draw."
+        },
+        "fonts": {
+          "type": "array",
+          "description": "Fonts are the fonts cards are drawn in, their files read from FontFiles. With none, cards are drawn in the bundled Go fonts.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "family": {
+                "type": "string",
+                "description": "Family is the name font-family refers to it by: \"Outfit\"."
+              },
+              "file": {
+                "type": "string",
+                "description": "File is the TrueType or OpenType file's path in Config.FontFiles."
+              },
+              "style": {
+                "type": "string",
+                "description": "Style is \"normal\" or \"italic\". Empty means \"normal\"."
+              },
+              "weight": {
+                "type": "integer",
+                "description": "Weight is 100 to 900. Zero means 400."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "imageOrigins": {
+          "type": "array",
+          "description": "ImageOrigins are the origins remote images may be fetched from, such as \"https://cms.example.com\". An image from any other origin is an error.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxBytes": {
+          "type": "integer",
+          "description": "MaxBytes caps the bytes of cards kept. Zero means DefaultMaxBytes; a negative value means unlimited."
+        },
+        "maxEntries": {
+          "type": "integer",
+          "description": "MaxEntries caps how many cards are kept. Zero means DefaultMaxEntries; a negative value means unlimited."
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Prefix is the URL prefix cards are served under. Defaults to \"/_og/\"."
+        },
+        "renderTimeout": {
+          "description": "RenderTimeout is how long one card may take to draw, including fetching its images. Zero means DefaultRenderTimeout.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
+          ]
+        },
+        "root": {
+          "type": "string",
+          "description": "Root is the directory in Templates that template names are relative to. Defaults to \"templates\"."
+        },
+        "siteName": {
+          "type": "string",
+          "description": "SiteName is what a template reads as .Site.Name. Defaults to the host of the application's BaseURL."
+        },
+        "workers": {
+          "type": "integer",
+          "description": "Workers is how many cards are drawn at once. Zero means half the CPUs, at least one."
+        }
+      },
+      "markdownDescription": "A collage plugin that draws each page's share card — the image a link is shown with on X, LinkedIn, Slack and in messengers — from an HTML template, in pure Go, and serves it at a URL made from its content.\n\n[collage-ogimage](https://github.com/Elagoht/collage-ogimage)",
       "additionalProperties": false
     },
     "elagoht/opti-image": {
@@ -1041,7 +1276,7 @@
         },
         "sitemaps": {
           "type": "array",
-          "description": "Sitemaps are the absolute URLs of the site's sitemaps.",
+          "description": "Sitemaps are absolute URLs, or paths made absolute against the request's origin.",
           "items": {
             "type": "string"
           }
@@ -1133,6 +1368,10 @@
           "type": "boolean",
           "description": "HSTSSubdomains and HSTSPreload add includeSubDomains and preload."
         },
+        "key": {
+          "type": "string",
+          "description": "KeyHex is Key, hex-encoded, as configuration carries it. When both are set, KeyHex wins."
+        },
         "noSniff": {
           "type": "boolean",
           "description": "NoSniff turns X-Content-Type-Options: nosniff off when false is set in configuration; it is on by default."
@@ -1206,7 +1445,7 @@
       "properties": {
         "baseURL": {
           "type": "string",
-          "description": "BaseURL is the site's origin, as a reader's browser reaches it: \"https://example.com\". A sitemap lists absolute URLs, and the application cannot know which host it is served under. Falls back to the application's Config.BaseURL when left empty; required only when that is also unset."
+          "description": "BaseURL is the site's origin, as a reader's browser reaches it: \"https://example.com\". A sitemap lists absolute URLs, and the application cannot know which host it is served under. Falls back to the application's Config.BaseURL when left empty, and then to the origin collage resolves for the request's host (elagoht/tenant); required only when neither exists."
         },
         "exclude": {
           "type": "array",
@@ -1225,6 +1464,64 @@
         }
       },
       "markdownDescription": "A collage plugin that serves /sitemap.xml from the pages the application registered.\n\n[collage-sitemap](https://github.com/Elagoht/collage-sitemap)",
+      "additionalProperties": false
+    },
+    "elagoht/tenant": {
+      "type": "object",
+      "description": "A collage plugin that serves one site to many customers, each on a host of its own — acme.app.com, globex.app.com, or a customer's own domain — with every absolute URL the site writes following the host.",
+      "properties": {
+        "bypass": {
+          "type": "array",
+          "description": "Bypass are hosts served without a tenant: the product's own site, say, on app.com.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxHosts": {
+          "type": "integer",
+          "description": "MaxHosts bounds how many hosts' answers are kept, so a client sending random Host headers cannot grow memory or make Resolve run without end. Default 10000."
+        },
+        "tenants": {
+          "type": "array",
+          "description": "Tenants are the tenants known from configuration. They are looked up before Resolve.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "hosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "type": "string"
+              },
+              "origin": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "ttl": {
+          "description": "TTL is how long Resolve's answer for a host is kept, \"is no tenant\" included. Default \"1m\".",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
+          ]
+        }
+      },
+      "markdownDescription": "A collage plugin that serves one site to many customers, each on a host of its own — acme.app.com, globex.app.com, or a customer's own domain — with every absolute URL the site writes following the host.\n\n[collage-tenant](https://github.com/Elagoht/collage-tenant)",
       "additionalProperties": false
     },
     "elagoht/toc": {

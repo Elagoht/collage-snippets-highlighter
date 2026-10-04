@@ -38,7 +38,7 @@
         },
         {
           "name": "support.function.collage.plugin",
-          "match": "(?<![.$\\w])\\b(?:liveClient|searchBox|offlineScript|cspNonce|flashes|t|th|tn|fieldError|fieldValue|hasErrors|honeypot|highlight|toc|readingTime|bundle)\\b"
+          "match": "(?<![.$\\w])\\b(?:liveClient|oauthLogin|searchBox|offlineScript|cspNonce|flashes|t|th|tn|fieldError|fieldValue|hasErrors|honeypot|highlight|toc|readingTime|bundle)\\b"
         },
         {
           "name": "support.function.builtin.collage-template",

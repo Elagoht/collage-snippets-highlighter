@@ -1,6 +1,7 @@
 // Command schemagen writes the JSON Schema of plugins-config.json from the
 // plugins' own source: each plugin's Name constant is a key, and its Options (or
-// Config) struct — the one it decodes with host.Config — is that key's schema,
+// Config) struct — the one it decodes with collage.PluginConfig (host.Config
+// before collage v0.50.0) — is that key's schema,
 // field comments included. Generated rather than written, so it cannot drift from
 // the plugins.
 //
@@ -69,7 +70,8 @@ type pkg struct {
 	types  map[string]*ast.TypeSpec
 	consts map[string][]string // named string type -> its constant values
 	repo   string
-	// reads reports that the plugin decodes its configuration with host.Config:
+	// reads reports that the plugin decodes its configuration with
+	// collage.PluginConfig, or host.Config before collage v0.50.0:
 	// without it, an Options struct is Go-only, whatever its fields look like.
 	reads bool
 	// decodes holds the types with their own UnmarshalJSON, whose JSON form their
@@ -188,6 +190,10 @@ func parse(dir string) (*pkg, error) {
 						if u, ok := call.Args[0].(*ast.UnaryExpr); ok && u.Op == token.AND {
 							p.reads = true
 						}
+					}
+					// collage v0.50.0: cfg, err := collage.PluginConfig(host, defaults).
+					if sel, ok := call.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "PluginConfig" && len(call.Args) == 2 {
+						p.reads = true
 					}
 				}
 				return true

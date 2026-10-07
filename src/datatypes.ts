@@ -31,7 +31,11 @@ const INTEGER = /^u?int(8|16|32|64)?$|^uintptr$|^byte$|^rune$/;
 /** parseType reads a reflect type string: "*blog.User", "[]blog.Comment", "map[string]blog.Meta". */
 export function parseType(s: string, types: Types): GoType {
   const text = s.trim();
-  if (Object.prototype.hasOwnProperty.call(types, text)) return { kind: "named", text };
+  if (Object.prototype.hasOwnProperty.call(types, text)) {
+    // Two types of one name in different packages (collage v0.51.2): which one a
+    // value has cannot be told.
+    return types[text].ambiguous ? { kind: "unknown", text } : { kind: "named", text };
+  }
   if (text.startsWith("*")) return { kind: "pointer", text, elem: parseType(text.slice(1), types) };
   if (text.startsWith("[]")) return { kind: "slice", text, elem: parseType(text.slice(2), types) };
   const arr = /^\[(\d+)\]/.exec(text);
@@ -70,8 +74,31 @@ function value(types: GoType[], unknown: boolean): Value {
   return { types: types.filter((t) => !seen.has(t.text) && seen.add(t.text)), unknown };
 }
 
-function deref(t: GoType): GoType {
-  while (t.kind === "pointer") t = t.elem;
+/** deref follows pointers, a named pointer type's too (`type Ref *User`). */
+function deref(t: GoType, types: Types): GoType {
+  for (let guard = 0; guard < 16; guard++) {
+    if (t.kind === "pointer") t = t.elem;
+    else if (t.kind === "named" && types[t.text].kind === "ptr") {
+      const elem = types[t.text].elem;
+      t = elem ? parseType(elem, types) : { kind: "unknown", text: t.text };
+    } else break;
+  }
+  return t;
+}
+
+/** container is what a named container holds, when the table says (collage v0.51.1). */
+function container(t: GoType, types: Types): GoType {
+  if (t.kind !== "named") return t;
+  const entry = types[t.text];
+  const elem = entry.elem ? parseType(entry.elem, types) : undefined;
+  switch (entry.kind) {
+    case "slice":
+    case "array":
+    case "chan":
+      return elem ? { kind: entry.kind, text: t.text, elem } : t;
+    case "map":
+      return elem && entry.key ? { kind: "map", text: t.text, key: parseType(entry.key, types), elem } : t;
+  }
   return t;
 }
 
@@ -79,16 +106,19 @@ type Lookup = { found: GoType } | { missing: true } | { unknown: true };
 
 /** lookup is what `.name` gives on a value of type t. */
 function lookup(t: GoType, name: string, types: Types): Lookup {
-  const d = deref(t);
+  let d = deref(t, types);
   if (d.kind === "named") {
     const entry = types[d.text];
+    if (entry.ambiguous) return { unknown: true };
     const field = entry.fields?.find((f) => f.name === name);
     if (field) return { found: parseType(field.type, types) };
     const method = entry.methods?.find((m) => m.name === name);
     if (method) return { found: parseType(method.returns, types) };
-    // Only a struct's names are all known; a named map is looked up by key, and
-    // other kinds are left to the startup check.
-    return entry.kind === "struct" ? { missing: true } : { unknown: true };
+    if (entry.kind === "struct") return { missing: true };
+    // A named map is looked up by key, when the table says its types; other
+    // kinds are left to the startup check.
+    d = container(d, types);
+    if (d.kind !== "map") return { unknown: true };
   }
   // `.key` on a map[string]V is V; a key the map lacks only ends the chain.
   if (d.kind === "map") return d.key.kind === "basic" && d.key.text === "string" ? { found: d.elem } : { unknown: true };
@@ -142,7 +172,7 @@ export function rangeOf(v: Value, types: Types): { key: Value; elem: Value } {
   const elems: GoType[] = [];
   let unknown = v.unknown;
   for (const t of v.types) {
-    const d = deref(t);
+    const d = container(deref(t, types), types);
     if (d.kind === "slice" || d.kind === "array") {
       keys.push({ kind: "basic", text: "int" });
       elems.push(d.elem);
@@ -156,7 +186,8 @@ export function rangeOf(v: Value, types: Types): { key: Value; elem: Value } {
       keys.push(d);
       elems.push(d);
     } else {
-      // A named container's element type is not in the table.
+      // A named container whose element the table does not say (collage
+      // before v0.51.1), or what cannot be ranged over.
       unknown = true;
     }
   }
@@ -173,8 +204,8 @@ export interface Member {
 
 /** members are the fields and methods of a type, through pointers. */
 export function members(t: GoType, types: Types): Member[] {
-  const d = deref(t);
-  if (d.kind !== "named") return [];
+  const d = deref(t, types);
+  if (d.kind !== "named" || types[d.text].ambiguous) return [];
   const entry = types[d.text];
   return [
     ...(entry.fields ?? []).map((f) => ({ name: f.name, type: f.type })),
@@ -219,19 +250,12 @@ export function dataOf(fragments: InspectedFragment[], types: Types): Value {
   return value(out, unknown);
 }
 
-/**
- * fragmentsOfTemplate are the fragments rendering the template file at name, its
- * path under the template root. When none does — a template file system rooted
- * somewhere the inspection's templateRoot does not say, os.DirFS("templates") with
- * Root "." — the file's path from the project root is matched by its end.
- */
-export function fragmentsOfTemplate(inspection: Inspection, name: string | undefined, fromRoot?: string): InspectedFragment[] {
+/** fragmentsOfTemplate are the fragments rendering the template file at name, its
+ * path under the template directory (Project.templateName). */
+export function fragmentsOfTemplate(inspection: Inspection, name: string | undefined): InspectedFragment[] {
+  if (!name) return [];
   const ext = inspection.templateExtension || "";
-  const files = inspection.fragments.filter((f) => !f.inline && f.template);
-  const exact = name ? files.filter((f) => f.template === name || f.template + ext === name) : [];
-  // A file outside the template root (name undefined) is no template at all.
-  if (exact.length || !name || !fromRoot) return exact;
-  return files.filter((f) => [f.template, f.template + ext].some((t) => fromRoot === t || fromRoot.endsWith("/" + t)));
+  return inspection.fragments.filter((f) => !f.inline && f.template && (f.template === name || f.template + ext === name));
 }
 
 /** fragmentsNamed are the inline fragments registered under one of names. */
@@ -247,6 +271,8 @@ interface Frame {
   /** The dot outside the block, which an {{else}} goes back to. */
   outer: Value;
   vars: Map<string, Value>;
+  /** What its own action declared — `{{with $x := …}}` — which an {{else}} keeps. */
+  head: Map<string, Value>;
 }
 
 /** The scope at a point of a template: what `.` is and the variables in reach. */
@@ -263,7 +289,33 @@ export interface Finding {
   message: string;
 }
 
-const CHAIN = /^(\$\w*)?((?:\.[A-Za-z_]\w*)+)$/;
+const IDENT = "[\\p{L}_][\\p{L}\\p{N}_]*";
+const CHAIN = new RegExp(`^(\\$[\\p{L}\\p{N}_]*)?((?:\\.${IDENT})+)$`, "u");
+const VARIABLE = /^\$[\p{L}\p{N}_]*$/u;
+
+/** The offset of the "}}" closing an action whose content starts at from: string
+ * literals skipped, so `{{"}}"}}` closes at the second; -1 when unclosed. */
+function closeOf(text: string, from: number, end: number): number {
+  for (let i = from; i < end - 1; i++) {
+    const c = text[i];
+    if (c === '"') {
+      for (i++; i < end && text[i] !== '"' && text[i] !== "\n"; i++) if (text[i] === "\\") i++;
+    } else if (c === "`") {
+      const close = text.indexOf("`", i + 1);
+      if (close < 0 || close >= end) return -1;
+      i = close;
+    } else if (c === "}" && text[i + 1] === "}") return i;
+  }
+  return -1;
+}
+
+/** inComment is whether offset is inside a {{/* … *\/}} comment. */
+export function inComment(text: string, offset: number): boolean {
+  // The last comment opened before offset — its text may hold "{{" — not yet closed.
+  let start = -1;
+  for (const m of text.slice(0, offset).matchAll(/\{\{-?\s*\/\*/g)) start = m.index + m[0].length;
+  return start >= 0 && !text.slice(start, offset).includes("*/");
+}
 
 /** The actions of text between start and end: where each opens, its content, and where it closes. */
 function* actions(text: string, start: number, end: number): Generator<{ open: number; from: number; to: number; closed: boolean }> {
@@ -279,8 +331,8 @@ function* actions(text: string, start: number, end: number): Generator<{ open: n
       i = stop < 0 ? end : stop + 2;
       continue;
     }
-    const close = text.indexOf("}}", from);
-    const closed = close >= 0 && close < end;
+    const close = closeOf(text, from, end);
+    const closed = close >= 0;
     const to = closed ? (text[close - 1] === "-" && /\s/.test(text[close - 2] ?? "") ? close - 1 : close) : end;
     yield { open, from, to, closed };
     if (!closed) return;
@@ -294,7 +346,7 @@ function* actions(text: string, start: number, end: number): Generator<{ open: n
  * returns the scope there; it reports what no type has on the way.
  */
 export function walk(text: string, start: number, end: number, root: Value, types: Types, opts: Options = {}, at?: number): { findings: Finding[]; scope: Scope } {
-  const frames: Frame[] = [{ kind: "root", dot: root, outer: root, vars: new Map([["$", root]]) }];
+  const frames: Frame[] = [{ kind: "root", dot: root, outer: root, vars: new Map([["$", root]]), head: new Map() }];
   const findings: Finding[] = [];
   const top = () => frames[frames.length - 1];
   const variable = (name: string): Value => {
@@ -313,7 +365,7 @@ export function walk(text: string, start: number, end: number, root: Value, type
   /** The value a word is — `.`, `.A.B`, `$x.A`, `$` — reporting a missing name. */
   const chain = (text: string, t: Token, report: boolean): Value => {
     if (t.text === ".") return top().dot;
-    const m = CHAIN.exec(t.text) ?? (/^\$\w*$/.test(t.text) ? [t.text, t.text, ""] : null);
+    const m = CHAIN.exec(t.text) ?? (VARIABLE.test(t.text) ? [t.text, t.text, ""] : null);
     if (!m) return UNKNOWN;
     // `(x).A`: a field of what the parentheses give, which is not known here.
     if (text[t.start - 1] === ")") return UNKNOWN;
@@ -343,7 +395,7 @@ export function walk(text: string, start: number, end: number, root: Value, type
   const declaration = (toks: Token[]): { names: string[]; assign?: string; rest: Token[] } => {
     const names: string[] = [];
     let i = 0;
-    while (toks[i]?.kind === "word" && toks[i].text.startsWith("$") && !toks[i].text.includes(".")) {
+    while (toks[i]?.kind === "word" && VARIABLE.test(toks[i].text)) {
       names.push(toks[i].text);
       i++;
       if (toks[i]?.text === ",") i++;
@@ -357,7 +409,8 @@ export function walk(text: string, start: number, end: number, root: Value, type
     if (at !== undefined && at >= a.from && (at <= a.to || !a.closed)) return { findings, scope: scope() };
     // An action still being typed runs into the next one — `{{.` before an
     // `{{end}}` — and the template does not parse: nothing after it is certain.
-    if (text.slice(a.from, a.to).includes("{{")) return { findings, scope: scope() };
+    // A "{{" in a string literal, `{{"{{"}}`, is text.
+    if (text.slice(a.from, a.to).replace(/"(?:[^"\\\n]|\\.)*"|`[^`]*`/g, "").includes("{{")) return { findings, scope: scope() };
     const toks = lex(text, a.from, a.to);
     if (toks.length === 0) continue;
     const head = toks[0].kind === "word" ? toks[0].text : "";
@@ -367,26 +420,29 @@ export function walk(text: string, start: number, end: number, root: Value, type
         if (frames.length > 1) frames.pop();
         break;
       case "else": {
+        // The branch left behind takes what it declared with it; what the block's
+        // own action declared stays — in a range's else, though, its variables
+        // never held an element.
         frame.dot = frame.outer;
+        frame.vars = new Map([...frame.head].map(([n, v]) => [n, frame.kind === "range" ? UNKNOWN : v]));
         const kw = toks[1]?.kind === "word" ? toks[1].text : "";
-        if (kw === "with") {
+        if (kw === "with" || kw === "if") {
           const d = declaration(toks.slice(2));
           const v = pipeline(d.rest);
-          frame.dot = v;
-          for (const n of d.names) frame.vars.set(n, v);
-        } else if (kw === "if") {
-          pipeline(toks.slice(2));
+          if (kw === "with") frame.dot = v;
+          for (const n of d.names) {
+            frame.vars.set(n, v);
+            frame.head.set(n, v);
+          }
         }
         break;
       }
       case "if":
-        pipeline(toks.slice(1));
-        frames.push({ kind: "if", dot: frame.dot, outer: frame.dot, vars: new Map() });
-        break;
       case "with": {
         const d = declaration(toks.slice(1));
         const v = pipeline(d.rest);
-        frames.push({ kind: "with", dot: v, outer: frame.dot, vars: new Map(d.names.map((n) => [n, v])) });
+        const head = new Map(d.names.map((n) => [n, v]));
+        frames.push({ kind: toks[0].text, dot: toks[0].text === "with" ? v : frame.dot, outer: frame.dot, vars: new Map(head), head });
         break;
       }
       case "range": {
@@ -398,14 +454,14 @@ export function walk(text: string, start: number, end: number, root: Value, type
           vars.set(d.names[0], key);
           vars.set(d.names[1], elem);
         }
-        frames.push({ kind: "range", dot: elem, outer: frame.dot, vars });
+        frames.push({ kind: "range", dot: elem, outer: frame.dot, vars, head: new Map(vars) });
         break;
       }
       case "define":
       case "block":
         // Whatever invokes it decides what it sees: unknown, $ included.
         if (head === "block") pipeline(toks.slice(2));
-        frames.push({ kind: head, dot: UNKNOWN, outer: UNKNOWN, vars: new Map([["$", UNKNOWN]]) });
+        frames.push({ kind: head, dot: UNKNOWN, outer: UNKNOWN, vars: new Map([["$", UNKNOWN]]), head: new Map([["$", UNKNOWN]]) });
         break;
       default: {
         const d = declaration(toks);
@@ -474,25 +530,26 @@ export type Completion =
 export function completeAt(text: string, start: number, end: number, offset: number, root: Value, types: Types, opts: Options = {}): Completion | undefined {
   const open = text.lastIndexOf("{{", offset - 1);
   if (open < start || text.lastIndexOf("}}", offset - 1) > open) return undefined;
+  if (inComment(text, offset)) return undefined;
   const before = text.slice(open + 2, offset);
-  const after = /^\w*/.exec(text.slice(offset))?.[0] ?? "";
+  const after = /^[\p{L}\p{N}_]*/u.exec(text.slice(offset))?.[0] ?? "";
   const { scope } = walk(text, start, end, root, types, opts, offset);
 
-  const m = /(\$\w*)?((?:\.[A-Za-z_]\w*)*)\.(\w*)$/.exec(before);
+  const m = new RegExp(`(\\$[\\p{L}\\p{N}_]*)?((?:\\.${IDENT})*)\\.([\\p{L}\\p{N}_]*)$`, "u").exec(before);
   if (m) {
     const lead = before[m.index - 1];
     // A field of a parenthesised result, or the dot in a number: not known.
-    if (lead !== undefined && /[\w)\]"'`]/.test(lead)) return undefined;
+    if (lead !== undefined && /[\p{L}\p{N}_)\]"'`]/u.test(lead)) return undefined;
     const base = m[1] ? scope.vars.get(m[1]) ?? UNKNOWN : scope.dot;
     const names = m[2] ? m[2].slice(1).split(".") : [];
     const r = resolve(base, names, types, opts);
     if (r.missing) return undefined;
     return { kind: "members", items: offered(r.value, types), start: offset - m[3].length, end: offset + after.length };
   }
-  const v = /\$(\w*)$/.exec(before);
+  const v = /\$([\p{L}\p{N}_]*)$/u.exec(before);
   if (v) {
     const lead = before[v.index - 1];
-    if (lead !== undefined && /[\w)]/.test(lead)) return undefined;
+    if (lead !== undefined && /[\p{L}\p{N}_)]/u.test(lead)) return undefined;
     return {
       kind: "variables",
       items: [...scope.vars].map(([name, value]) => ({ name, value })),
@@ -518,11 +575,33 @@ export function typeLabel(v: Value): string {
  */
 export function embeddedFields(go: string): string[] {
   const out = new Set<string>();
-  for (const m of go.matchAll(/\bstruct\s*\{([^{}]*)\}/g)) {
-    for (const line of m[1].split(/[\n;]/)) {
-      const e = /^\s*\*?(?:[A-Za-z_]\w*\.)?([A-Z]\w*)(?:\[[^\]]*\])?\s*(?:`[^`]*`|"[^"]*")?\s*(?:\/\/.*)?$/.exec(line);
-      if (e) out.add(e[1]);
+  const embedded = /^\s*\*?(?:[\p{L}_][\p{L}\p{N}_]*\.)?(\p{Lu}[\p{L}\p{N}_]*)(?:\[[^\]]*\])?\s*(?:`[^`]*`|"[^"]*")?\s*(?:\/\/.*)?$/u;
+  for (const m of go.matchAll(/\bstruct\s*\{/g)) {
+    // The body, braces matched, so a nested struct type does not end it; only
+    // its own lines, at depth one, are its fields.
+    let depth = 0;
+    let line = "";
+    for (let i = m.index + m[0].length - 1; i < go.length; i++) {
+      const c = go[i];
+      if (c === "`") {
+        const close = go.indexOf("`", i + 1);
+        if (close < 0) break;
+        if (depth === 1) line += go.slice(i, close + 1);
+        i = close;
+        continue;
+      }
+      if (c === "{") depth++;
+      else if (c === "}" && --depth === 0) break;
+      if (depth === 1 && c !== "{" && c !== "}") {
+        if (c === "\n" || c === ";") {
+          const e = embedded.exec(line);
+          if (e) out.add(e[1]);
+          line = "";
+        } else line += c;
+      }
     }
+    const e = embedded.exec(line);
+    if (e) out.add(e[1]);
   }
   return [...out];
 }

@@ -4,6 +4,7 @@
 // so it can be tested in Node.
 import { tokens, callArgs, stringValue, type GoToken } from "./embedded";
 import { allCalls } from "./template";
+import type { Inspection } from "./project";
 
 /** The fragment a slot binding is made on, as far as the Go text says. */
 export interface Parent {
@@ -80,7 +81,8 @@ function parentOf(toks: GoToken[], j: number): Parent | undefined {
       j = k - 3;
       continue;
     }
-    if (t.kind === "ident") return assigned(toks, j);
+    // `b.WithSlotFragment`, b a variable; `t.frag.WithSlotFragment` is a field, not followed.
+    if (t.kind === "ident" && toks[j - 1]?.text !== ".") return assigned(toks, j);
     return undefined;
   }
   return undefined;
@@ -109,6 +111,8 @@ function constructed(toks: GoToken[], i: number): Parent {
 function assigned(toks: GoToken[], j: number): Parent | undefined {
   const name = toks[j].text;
   for (let k = j - 1; k >= 0; k--) {
+    // Not past the function the variable is used in: another's is another variable.
+    if (toks[k].kind === "ident" && toks[k].text === "func") return undefined;
     if (toks[k].text !== name || toks[k].kind !== "ident") continue;
     let a = k + 1;
     if (toks[a]?.text === ":") a++;
@@ -132,6 +136,13 @@ function constText(toks: GoToken[], ident: string): string | undefined {
     if (toks[a]?.text === "=" && toks[a + 1]?.kind === "raw") return stringValue(toks[a + 1]);
   }
   return undefined;
+}
+
+/** templateByName is the template of the fragments registered as name, when they
+ * all have one and the same: fragment names need not be unique. */
+export function templateByName(inspection: Inspection | undefined, name: string): string | undefined {
+  const templates = new Set((inspection?.fragments ?? []).filter((f) => f.name === name).map((f) => (f.inline ? "" : f.template)));
+  return templates.size === 1 ? [...templates][0] || undefined : undefined;
 }
 
 /**

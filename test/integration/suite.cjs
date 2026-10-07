@@ -96,7 +96,26 @@ async function run() {
   }, 30000);
   assert.equal(dataDiags[0].severity, vscode.DiagnosticSeverity.Warning);
   assert.match(dataDiags[0].message, /type main\.Post has no field or method Titel \(did you mean Title\?\)/);
+
+  // Unsaved Go code pauses the field warnings: the table may be about to change.
+  const goMain = await vscode.workspace.openTextDocument(path.join(folder, "main.go"));
+  const goEditor = await vscode.window.showTextDocument(goMain);
+  await goEditor.edit((e) => e.insert(new vscode.Position(0, 0), "// renamed a field\n"));
+  await until("field warnings paused", async () => !vscode.languages.getDiagnostics(doc.uri).some((x) => /Titel/.test(x.message)), 30000);
   await vscode.commands.executeCommand("workbench.action.files.revert");
+  await until("field warnings back", async () => vscode.languages.getDiagnostics(doc.uri).some((x) => /Titel/.test(x.message)), 30000);
+  await vscode.window.showTextDocument(doc);
+  await vscode.commands.executeCommand("workbench.action.files.revert");
+
+  // "." in a tag asks for nothing: no attribute list.
+  const inTag = (await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", doc.uri, new vscode.Position(6, 3), ".")).items.map(label);
+  assert.ok(!inTag.some((l) => l.startsWith("data-collage")), "attributes offered for a typed dot: " + inTag.slice(0, 20).join(", "));
+
+  // A template under the root that no fragment renders: its path's end is not enough.
+  const admin = await vscode.workspace.openTextDocument(path.join(folder, "templates/admin/pages/post.html"));
+  await vscode.window.showTextDocument(admin);
+  await sleep(2000);
+  assert.deepEqual(vscode.languages.getDiagnostics(admin.uri).filter((x) => x.source === "collage").map((d) => d.message), []);
 
   // WithSlotFragment(" in Go: the slots the parent's template calls.
   const main = await vscode.workspace.openTextDocument(path.join(folder, "main.go"));

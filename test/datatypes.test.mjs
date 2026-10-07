@@ -10,7 +10,8 @@ const { parseType, resolve, rangeOf, dataOf, fragmentsOfTemplate, fragmentsNamed
 const { inlineTemplates, inlineUses } = require("../out/src/embedded.js");
 
 // The fixture is `go run . collage-inspect` of a scaffolded demo with a blog
-// package added: Post{Base; Attrs map[string]any; Title; Author *User;
+// package added, on collage v0.51.1: Post{Base; Attrs map[string]any;
+// Labels TagMap (map[string]Meta); Owner UserRef (*User); Başlık; Title; Author *User;
 // Comments []Comment; Tags map[string]Meta; Related []*Post; Extra any;
 // Grid [2][]string}, methods URL, Excerpt(n) on *Post, WordCount(a, b);
 // Posts []Post with Len; fragments post (blog.Post), post-card (blog.Post) and
@@ -73,13 +74,19 @@ test("range gives the element, and the index or key", () => {
   assert.deepEqual([tags.key.types[0].text, tags.elem.types[0].text], ["string", "blog.Meta"]);
   const related = rangeOf(resolve(post, ["Related"], types).value, types);
   assert.equal(related.elem.types[0].text, "*blog.Post");
-  // A named container's element is not in the table.
+  // A named container's element and key, from collage v0.51.1.
   const list = rangeOf(dataOfTemplate("partials/list.html"), types);
-  assert.equal(list.elem.unknown, true);
+  assert.deepEqual([list.key.types[0].text, list.elem.types[0].text, list.elem.unknown], ["int", "blog.Post", false]);
+  const labels = rangeOf(resolve(post, ["Labels"], types).value, types);
+  assert.deepEqual([labels.key.types[0].text, labels.elem.types[0].text], ["string", "blog.Meta"]);
+  // Before it, the table did not say: unknown.
+  const old = structuredClone(types);
+  delete old["blog.Posts"].elem;
+  assert.equal(rangeOf(dataOf(fragmentsOfTemplate(inspection, "partials/list.html"), old), old).elem.unknown, true);
 });
 
 test("completing {{. and chains", () => {
-  assert.deepEqual(names(complete("<h1>{{.‸")), ["Attrs", "Author", "Comments", "Excerpt", "Extra", "Grid", "ID", "Related", "Slug", "Tags", "Title", "URL", "WordCount"]);
+  assert.deepEqual(names(complete("<h1>{{.‸")), ["Attrs", "Author", "Base", "Başlık", "Comments", "Excerpt", "Extra", "Grid", "ID", "Labels", "Owner", "Related", "Slug", "Tags", "Title", "URL", "WordCount"]);
   assert.deepEqual(names(complete("{{.Author.‸}}")), ["Bio", "Email", "Initials", "Name"]);
   assert.deepEqual(names(complete("{{ .Tags.go.‸ }}")), ["Extra", "Score"]);
   assert.deepEqual(names(complete("{{.Ti‸")), names(complete("{{.‸")), "the word typed so far is replaced, not narrowed here");
@@ -163,17 +170,34 @@ test("silent where the data is not known", () => {
   assert.deepEqual(findings(all, dataOf([{ name: "x", template: "x.html", dataType: "blog.Post", typeCheck: false }], types)), [], "WithoutTypeCheck");
   assert.deepEqual(findings(all, dataOf([{ name: "x", template: "x.html", dataType: "blog.Post" }, { name: "y", template: "x.html", dataType: null }], types)), [], "one of several unknown");
   assert.deepEqual(findings(all, dataOfTemplate("nowhere.html")), [], "a template no fragment renders");
-  // The named container: ranged over, its element is unknown; its methods complete.
-  const list = dataOfTemplate("partials/list.html");
-  assert.deepEqual(findings("{{range .}}{{.Whatever}}{{end}}{{.Len}}", list), []);
-  assert.deepEqual(names(complete("{{.‸", list)), ["Len"]);
+  // A named container on collage before v0.51.1: ranged over, its element is
+  // unknown; its methods complete.
+  const old = structuredClone(types);
+  delete old["blog.Posts"].elem;
+  const list = dataOf(fragmentsOfTemplate(inspection, "partials/list.html"), old);
+  assert.deepEqual(walk("{{range .}}{{.Whatever}}{{end}}{{.Len}}", 0, 38, list, old).findings, []);
+  assert.deepEqual(completeAt("{{.", 0, 3, 3, list, old).items.map((i) => i.name), ["Len"]);
+  // A type name two packages share (collage v0.51.2): ambiguous, so unknown.
+  const amb = structuredClone(types);
+  amb["blog.Post"] = { kind: "struct", ambiguous: true };
+  assert.deepEqual(walk("{{.Whatever}}{{.Author.Nope}}", 0, 29, dataOf(fragmentsOfTemplate(inspection, "pages/post.html"), amb), amb).findings, []);
+  assert.deepEqual(walk("{{.Owner.Nope}}{{.Author.Nope}}", 0, 30, post, { ...types, "blog.User": { kind: "struct", ambiguous: true } }).findings, [], "an ambiguous type reached through a field");
   // A function's result is unknown.
   assert.deepEqual(findings("{{with index .Comments 0}}{{.Nope}}{{end}}{{$x := len .Comments}}{{$x.Nope}}"), []);
 });
 
-test("an embedded field is not reported: the table lists only what it promotes", () => {
-  assert.deepEqual(findings("{{.Base.ID}}{{.ID}}", post, { embedded: new Set(["Base"]) }), []);
+test("embedded fields: listed from collage v0.51.1, a source scan before it", () => {
+  assert.deepEqual(findings("{{.Base.ID}}{{.ID}}{{.Base.Nope}}").map((f) => f[0]), ["Nope"]);
+  assert.deepEqual(names(complete("{{.Base.‸")), ["ID"]);
+  // Older collage: no Base in the table; a name the project embeds is never reported.
+  const old = structuredClone(types);
+  old["blog.Post"].fields = old["blog.Post"].fields.filter((f) => !f.embedded);
+  const oldPost = dataOf(fragmentsOfTemplate(inspection, "pages/post.html"), old);
+  assert.equal(walk("{{.Base.ID}}", 0, 12, oldPost, old).findings.length, 1, "without the scan it would be");
+  assert.deepEqual(walk("{{.Base.ID}}", 0, 12, oldPost, old, { embedded: new Set(["Base"]) }).findings, []);
   assert.deepEqual(embeddedFields("type Post struct {\n\tBase\n\t*auth.User `json:\"u\"`\n\tTitle string\n\tbase\n}\ntype X struct{ Inner; N int }"), ["Base", "User", "Inner"]);
+  // A nested struct type does not end the body; a field after it is still read.
+  assert.deepEqual(embeddedFields("type P struct {\n\tMeta struct {\n\t\tN int\n\t}\n\tŞablon\n}").sort(), ["Şablon"]);
 });
 
 test("inline templates: by the fragment name, or the constant passed with one", () => {
@@ -196,11 +220,43 @@ test("inline templates: by the fragment name, or the constant passed with one", 
   assert.deepEqual(walk(bad, r2.start, r2.end, clock, types).findings.map((f) => f.message), ["type fragments.clockView has no field or method Uptme (did you mean Uptime?)"]);
 });
 
-test("a template file maps to its fragments by its path under the template root", () => {
+test("a template file maps to its fragments by its exact path under the template directory", () => {
   assert.deepEqual(fragmentsOfTemplate(inspection, "pages/post.html").map((f) => f.name), ["post"]);
   assert.deepEqual(fragmentsOfTemplate(inspection, "partials/card.html").map((f) => f.name).sort(), ["post-card", "user-card"]);
-  // A template root the inspection does not name: matched by the path's end.
-  assert.deepEqual(fragmentsOfTemplate(inspection, "templates/pages/post.html", "templates/pages/post.html").map((f) => f.name), ["post"]);
-  assert.deepEqual(fragmentsOfTemplate(inspection, undefined, "static/x.html"), []);
-  assert.deepEqual(fragmentsOfTemplate(inspection, undefined, "docs/pages/post.html"), [], "a file outside the template root is no template");
+  assert.deepEqual(fragmentsOfTemplate(inspection, "admin/pages/home.html"), [], "never by the end of its path");
+  assert.deepEqual(fragmentsOfTemplate(inspection, undefined), []);
+});
+
+test("named pointers and maps: through the table's elem and key", () => {
+  assert.deepEqual(names(complete("{{.Owner.‸")), ["Bio", "Email", "Initials", "Name"]);
+  assert.deepEqual(names(complete("{{.Labels.go.‸")), ["Extra", "Score"]);
+  assert.deepEqual(findings("{{.Owner.Name}}{{.Labels.any.Score}}{{.Labels.any.Scor}}").map((f) => f[0]), ["Scor"]);
+});
+
+test("identifiers in any script", () => {
+  assert.deepEqual(findings("{{.Başlık}}{{$ş := .Author}}{{$ş.Name}}{{$ş.Nme}}").map((f) => f[0]), ["Nme"]);
+  assert.deepEqual(names(complete("{{$ş := .Author}}{{$ş.‸")), ["Bio", "Email", "Initials", "Name"]);
+  assert.deepEqual(complete("{{$ş := .Author}}{{$‸").items.map((v) => v.name).sort(), ["$", "$ş"]);
+  const c = complete("{{.Baş‸lık}}");
+  assert.equal(c.end - c.start, 6, "the whole word is replaced");
+});
+
+test("else leaves behind what its branch declared", () => {
+  assert.deepEqual(findings("{{$p := .}}{{if .Title}}{{$p := .Author}}{{else}}{{$p.Slug}}{{end}}"), []);
+  assert.deepEqual(findings("{{$p := .}}{{with .Author}}{{$p := .}}{{else}}{{$p.Slug}}{{end}}"), []);
+  assert.deepEqual(findings("{{with $a := .Author}}{{else}}{{$a.Name}}{{end}}"), [], "what with itself declared stays");
+  assert.deepEqual(findings("{{range $c := .Comments}}{{else}}{{$c.Nope}}{{end}}"), [], "in a range's else the variable is not an element");
+  assert.deepEqual(findings("{{range .Comments}}{{else}}{{.Title}}{{.Nope}}{{end}}").map((f) => f[0]), ["Nope"]);
+});
+
+test("if and else if declare variables as with does", () => {
+  assert.deepEqual(findings("{{if $a := .Author}}{{$a.Name}}{{$a.Nope}}{{end}}").map((f) => f[0]), ["Nope"]);
+  assert.deepEqual(findings("{{if .Title}}{{else if $a := .Author}}{{$a.Name}}{{$a.Nope}}{{end}}").map((f) => f[0]), ["Nope"]);
+  assert.deepEqual(names(complete("{{if $a := .Author}}{{$a.‸")), ["Bio", "Email", "Initials", "Name"]);
+});
+
+test("comments and literal braces", () => {
+  assert.equal(complete("{{/* .‸ */}}"), undefined);
+  assert.equal(complete("{{- /* {{.‸"), undefined);
+  assert.deepEqual(findings(`{{"{{"}}{{.Titel}}{{"}}"}}{{.Nope}}`).map((f) => f[0]), ["Titel", "Nope"], "a brace in a string does not stop or end the walk");
 });

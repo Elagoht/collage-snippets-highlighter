@@ -109,7 +109,7 @@
             "error"
           ],
           "default": "warning",
-          "description": "How a name the application does not have — a page in pageURL, a file in asset, a field its data lacks, a slot WithSlotFragment binds that the template never calls — is reported. A field or a slot is a warning at most: the startup check is the authority."
+          "description": "How a name the application does not have — a page in pageURL, a slot in slot, a file in asset, a field its data lacks, a slot WithSlotFragment binds that the template never calls — is reported. A field or a slot is a warning at most: the startup check is the authority."
         }
       }
     },

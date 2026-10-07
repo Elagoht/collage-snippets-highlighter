@@ -64,3 +64,30 @@ test("the slots a template calls, and whether that is all of them", () => {
   assert.deepEqual(templateSlots(`{{template "partials/aside.html" .}}{{slot "a"}}`), { names: ["a"], complete: false }, "an include collage follows");
   assert.deepEqual(templateSlots(`<p>nothing</p>`), { names: [], complete: true });
 });
+
+test("a variable is followed only within its function, and a field never", () => {
+  const go = `func a() {
+	b := collage.NewFragment("post", "pages/post.html")
+	_ = b
+}
+
+func c(t *T) {
+	b.WithSlotFragment("aside", x)
+	t.frag.WithSlotFragment("aside", x)
+	s.b.WithSlotFragment("aside", x)
+}`;
+  assert.deepEqual(slotBindings(go).map((b) => b.parent), [undefined, undefined, undefined]);
+});
+
+test("a parent known only by name: its template only when the name has one", async () => {
+  const { templateByName } = require("../out/src/goslots.js");
+  const inspection = { fragments: [
+    { name: "post", template: "pages/post.html" }, { name: "post", template: "pages/post.html" },
+    { name: "card", template: "a/card.html" }, { name: "card", template: "b/card.html" },
+    { name: "row", template: "", inline: true },
+  ] };
+  assert.equal(templateByName(inspection, "post"), "pages/post.html");
+  assert.equal(templateByName(inspection, "card"), undefined, "two fragments named card, two templates");
+  assert.equal(templateByName(inspection, "row"), undefined);
+  assert.equal(templateByName(inspection, "nope"), undefined);
+});

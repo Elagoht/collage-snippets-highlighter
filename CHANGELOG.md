@@ -15,6 +15,11 @@
   function's result, a `{{define}}`, or a name some struct embeds; for a
   template several fragments render, only a name none of them has. Never an
   error, whatever `collage.diagnostics` says.
+- Named containers, named maps and named pointers are followed through the
+  table's `elem` and `key`, and embedded fields come from the table, with collage
+  v0.51.1; an `ambiguous` type (v0.51.2) is unknown. Identifiers in any script
+  (`{{.Başlık}}`) are read as Go reads them. Field warnings pause while an
+  inspection runs, while it fails, and while Go code has unsaved changes.
 - **`WithSlotFragment("` completes** the slots the parent fragment's template
   calls, and `WithSlotFragment` or `WithSlotResolver` binding into one it never
   calls is a warning.

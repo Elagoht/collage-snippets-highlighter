@@ -84,7 +84,7 @@ export function lex(text: string, from: number, to: number): Token[] {
       out.push({ kind: "assign", text: "=", value: "", start: i, end: ++i, closed: true });
       continue;
     }
-    const m = /^[$.\w-]+/.exec(text.slice(i, Math.min(to, i + 256)));
+    const m = /^[$.\p{L}\p{N}_-]+/u.exec(text.slice(i, Math.min(to, i + 256)));
     if (m) {
       out.push({ kind: "word", text: m[0], value: "", start: i, end: i + m[0].length, closed: true });
       i += m[0].length;
@@ -124,7 +124,7 @@ function calls(tokens: Token[]): Call[] {
         if (fresh && KEYWORDS.has(t.text)) break;
         // `$x :=` — a variable being declared, not a call.
         if (t.text.startsWith("$") && tokens[i + 1]?.kind === "assign") break;
-        if (fresh && /^[A-Za-z_]\w*$/.test(t.text)) {
+        if (fresh && /^[\p{L}_][\p{L}\p{N}_]*$/u.test(t.text)) {
           const call: Call = { name: t.text, nameStart: t.start, args: [] };
           out.push(call);
           stack[stack.length - 1] = call;

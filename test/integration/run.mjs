@@ -47,6 +47,7 @@ type User struct{ Name string }
 type Post struct {
 	Title  string
 	Author *User
+	Başlık string
 }
 
 func loadPost(context.Context, *collage.RenderContext) (Post, error) { return Post{}, nil }
@@ -88,9 +89,13 @@ writeFileSync(join(project, "templates/pages/post.html"), [
   `<link href="{{asset "/static/app.css"}}">{{range flashes}}{{.Text}}{{end}}`,
   `<form action="{{actionURL ""}}"></form><form action="{{actionURL "vote" ""}}"></form>`,
   `<h1>{{.Title}}</h1>{{with .Author}}<p>{{.Name}}</p>{{end}}{{slot "aside"}}`,
+  `<p class="x">{{.Başlık}}</p>`,
   "",
 ].join("\n"));
 writeFileSync(join(project, "static/app.css"), "body{}\n");
+// A template no fragment renders, whose path ends like one that does: no data.
+mkdirSync(join(project, "templates/admin/pages"), { recursive: true });
+writeFileSync(join(project, "templates/admin/pages/post.html"), "<p>{{.Nope}}</p>\n");
 // Go files for the function snippets: an empty one beside a file that names its
 // package, and an empty one in a directory with nothing else in it.
 for (const dir of ["components", "auth-layout"]) mkdirSync(join(project, dir), { recursive: true });

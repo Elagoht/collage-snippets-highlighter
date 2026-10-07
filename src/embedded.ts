@@ -42,9 +42,9 @@ export function tokens(go: string): GoToken[] {
       while (j < go.length && go[j] !== c && go[j] !== "\n") j += go[j] === "\\" ? 2 : 1;
       out.push({ kind: "other", text: go.slice(i, j + 1), start: i, end: j + 1 });
       i = j + 1;
-    } else if (/[A-Za-z_]/.test(c)) {
+    } else if (/[\p{L}_]/u.test(c)) {
       let j = i + 1;
-      while (j < go.length && /\w/.test(go[j])) j++;
+      while (j < go.length && /[\p{L}\p{N}_]/u.test(go[j])) j++;
       out.push({ kind: "ident", text: go.slice(i, j), start: i, end: j });
       i = j;
     } else {

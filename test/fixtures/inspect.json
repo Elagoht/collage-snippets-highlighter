@@ -238,6 +238,15 @@
   }
  ],
  "types": {
+  "blog.Base": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "ID",
+     "type": "int"
+    }
+   ]
+  },
   "blog.Comment": {
    "kind": "struct",
    "fields": [
@@ -272,12 +281,29 @@
    "kind": "struct",
    "fields": [
     {
+     "name": "Base",
+     "type": "blog.Base",
+     "embedded": true
+    },
+    {
      "name": "ID",
      "type": "int"
     },
     {
      "name": "Attrs",
      "type": "map[string]interface {}"
+    },
+    {
+     "name": "Labels",
+     "type": "blog.TagMap"
+    },
+    {
+     "name": "Owner",
+     "type": "blog.UserRef"
+    },
+    {
+     "name": "Başlık",
+     "type": "string"
     },
     {
      "name": "Title",
@@ -332,6 +358,7 @@
   },
   "blog.Posts": {
    "kind": "slice",
+   "elem": "blog.Post",
    "methods": [
     {
      "name": "Len",
@@ -339,6 +366,11 @@
      "returns": "int"
     }
    ]
+  },
+  "blog.TagMap": {
+   "kind": "map",
+   "key": "string",
+   "elem": "blog.Meta"
   },
   "blog.User": {
    "kind": "struct",
@@ -363,6 +395,10 @@
      "returns": "string"
     }
    ]
+  },
+  "blog.UserRef": {
+   "kind": "ptr",
+   "elem": "blog.User"
   },
   "fragments.clockView": {
    "kind": "struct",

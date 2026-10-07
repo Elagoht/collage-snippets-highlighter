@@ -6,7 +6,8 @@ import * as cp from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { embeddedFields } from "./datatypes";
+import { atLeast, findTemplateDir, scanGo } from "./gofiles";
+import { Rerun } from "./rerun";
 
 export interface Inspection {
   version: number;
@@ -40,7 +41,13 @@ export interface InspectedFragment {
 /** The shape of a named type: its exported fields and the methods of it and its pointer. */
 export interface InspectedType {
   kind: string;
-  fields?: { name: string; type: string }[];
+  /** What a named pointer, slice, array, map or chan holds, and a map's key (collage v0.51.1). */
+  elem?: string;
+  key?: string;
+  /** Several types share this name (collage v0.51.2): it describes none of them. */
+  ambiguous?: boolean;
+  /** Embedded fields are listed too, marked, from collage v0.51.1. */
+  fields?: { name: string; type: string; embedded?: boolean }[];
   methods?: { name: string; args: number; returns: string }[];
 }
 
@@ -59,20 +66,34 @@ export class Project {
   inspection: Inspection | undefined;
   manifests: Manifest[] = [];
   /** The names Go source in the project embeds in a struct: never reported as
-   * missing from a template's data, since the type table does not list them. */
+   * missing from a template's data. Only for collage before v0.51.1, whose type
+   * table does not list embedded fields; empty otherwise. */
   embedded: Set<string> = new Set();
+  /** For each Go file, the InlineHTML identifiers it passes to NewInlineFragment
+   * and the fragment names they are passed with; read once per inspection. */
+  inlineUses: Map<string, Map<string, string[]>> = new Map();
+  /** The directory the fragments' template paths are relative to. */
+  templateDir: string;
+  /** The collage version go.mod requires, as `go list -m` says. */
+  collageVersion: string | undefined;
   error: string | undefined;
-  private running: Promise<void> | undefined;
+  private readonly runs = new Rerun();
 
-  constructor(readonly root: string, private readonly log: vscode.OutputChannel, private readonly onChange: () => void) {}
+  constructor(readonly root: string, private readonly log: vscode.OutputChannel, private readonly onChange: () => void) {
+    this.templateDir = path.join(root, "templates");
+  }
 
-  /** Refreshes the inspection and the manifests, one refresh at a time. */
+  /** Whether an inspection is running or asked for: what is known may be about to change. */
+  get pending(): boolean {
+    return this.runs.pending;
+  }
+
+  /** Refreshes the inspection and the manifests, one refresh at a time. One asked
+   * for while another runs runs after it: the save that asked may have come after
+   * the build started. */
   refresh(): Promise<void> {
-    this.running ??= this.load().finally(() => {
-      this.running = undefined;
-      this.onChange();
-    });
-    return this.running;
+    // onChange at the start too: pending now, what depends on the table waits.
+    return this.runs.run(() => this.load(), () => this.onChange(), () => this.onChange());
   }
 
   private async load(): Promise<void> {
@@ -85,7 +106,10 @@ export class Project {
     this.manifests = manifests;
     if (inspection) {
       this.inspection = inspection;
-      this.embedded = await embeddedIn(this.root);
+      this.templateDir = await findTemplateDir(this.root, inspection);
+      const scan = await scanGo(this.root, !atLeast(this.collageVersion, "v0.51.1"));
+      this.embedded = scan.embedded;
+      this.inlineUses = scan.uses;
     }
   }
 
@@ -126,6 +150,7 @@ export class Project {
     }
     const out: Manifest[] = [];
     for (const mod of parseStream(listing)) {
+      if (mod.Path === "github.com/Elagoht/collage") this.collageVersion = mod.Version;
       if (!mod.Dir) continue;
       try {
         const body = await vscode.workspace.fs.readFile(vscode.Uri.file(path.join(mod.Dir, "collage.json")));
@@ -141,44 +166,14 @@ export class Project {
 
   /** The name a template file has in the application: its path under the template root. */
   templateName(file: string): string | undefined {
-    const rootDir = path.join(this.root, this.inspection?.templateRoot || "templates");
-    const rel = path.relative(rootDir, file);
+    const rel = path.relative(this.templateDir, file);
     return rel.startsWith("..") ? undefined : rel.split(path.sep).join("/");
   }
 }
 
-/** embeddedIn reads the Go files under root for the fields their structs embed. */
-async function embeddedIn(root: string): Promise<Set<string>> {
-  const out = new Set<string>();
-  let files = 0;
-  const visit = async (dir: string): Promise<void> => {
-    let entries: import("node:fs").Dirent[];
-    try {
-      entries = await fs.readdir(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const e of entries) {
-      if (files > 5000) return;
-      if (e.isDirectory()) {
-        if (!e.name.startsWith(".") && e.name !== "vendor" && e.name !== "node_modules") await visit(path.join(dir, e.name));
-      } else if (e.name.endsWith(".go")) {
-        files++;
-        try {
-          for (const name of embeddedFields(await fs.readFile(path.join(dir, e.name), "utf8"))) out.add(name);
-        } catch {
-          // an unreadable file embeds nothing we can see
-        }
-      }
-    }
-  };
-  await visit(root);
-  return out;
-}
-
 /** `go list -m -json` prints a stream of JSON objects, not an array. */
-function parseStream(text: string): { Path: string; Dir?: string }[] {
-  const out: { Path: string; Dir?: string }[] = [];
+function parseStream(text: string): { Path: string; Dir?: string; Version?: string }[] {
+  const out: { Path: string; Dir?: string; Version?: string }[] = [];
   let depth = 0, start = -1, inString = false, escaped = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];

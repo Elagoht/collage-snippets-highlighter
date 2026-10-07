@@ -14,9 +14,9 @@ import { allCalls, stringArgAt } from "./template";
 import { namesFor, unknownName } from "./names";
 import { functionSnippets, headerEdits, packageName } from "./gosnippets";
 import { register as registerInlineHTML, VirtualDocuments } from "./inlinehtml";
-import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, typeLabel, walk, type Value } from "./datatypes";
+import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, inComment, typeLabel, walk, type Value } from "./datatypes";
 import { inlineTemplates, inlineUses } from "./embedded";
-import { slotBindingAt, slotBindings, templateSlots, type Parent } from "./goslots";
+import { slotBindingAt, slotBindings, templateByName, templateSlots, type Parent } from "./goslots";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -157,11 +157,16 @@ function documentation(f: TemplateFunction): vscode.MarkdownString {
 class Completion implements vscode.CompletionItemProvider {
   constructor(private readonly projects: Projects) {}
 
-  async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.CompletionItem[] | undefined> {
+  async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position, _token: vscode.CancellationToken, context?: vscode.CompletionContext): Promise<vscode.CompletionItem[] | undefined> {
     const { enabled, project } = await projectFor(this.projects, doc);
     if (!enabled) return undefined;
     const text = doc.getText();
     const offset = doc.offsetAt(pos);
+    // "." and "$" are typed for the data in an action; anywhere else — a class
+    // name in an attribute, a price in text — they ask for nothing.
+    const trigger = context?.triggerCharacter;
+    if ((trigger === "." || trigger === "$") && !insideAction(text, offset)) return undefined;
+    if (insideAction(text, offset) && inComment(text, offset)) return undefined;
 
     // Inside a string argument: the names valid there.
     const arg = stringArgAt(text, offset);
@@ -218,7 +223,7 @@ class Completion implements vscode.CompletionItemProvider {
 
   private functions(doc: vscode.TextDocument, pos: vscode.Position, project: Project | undefined): vscode.CompletionItem[] {
     const before = doc.lineAt(pos.line).text.slice(0, pos.character);
-    if (/[.$][A-Za-z_]*$/.test(before)) return []; // a field or a variable, not a function
+    if (/[.$][\p{L}\p{N}_]*$/u.test(before)) return []; // a field or a variable, not a function
     const items = functionsFor(project).map((f, i) => {
       const item = new vscode.CompletionItem({ label: f.name, detail: " " + f.signature.slice(f.name.length).trim(), description: f.source }, vscode.CompletionItemKind.Function);
       item.insertText = new vscode.SnippetString(f.insert);
@@ -268,7 +273,7 @@ function templateSections(project: Project, doc: vscode.TextDocument): Section[]
   const types = inspection.types ?? {};
   const goUri = VirtualDocuments.goUriOf(doc.uri);
   if (!goUri) {
-    const fragments = fragmentsOfTemplate(inspection, project.templateName(doc.fileName), path.relative(project.root, doc.fileName).split(path.sep).join("/"));
+    const fragments = fragmentsOfTemplate(inspection, project.templateName(doc.fileName));
     return fragments.length ? [{ start: 0, end: doc.getText().length, data: dataOf(fragments, types) }] : [];
   }
   const goDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === goUri.toString());
@@ -279,7 +284,7 @@ function templateSections(project: Project, doc: vscode.TextDocument): Section[]
   for (const t of inlineTemplates(go)) {
     let names = t.fragment !== undefined ? [t.fragment] : [];
     if (t.ident) {
-      uses ??= packageInlineUses(goDoc.fileName, go);
+      uses ??= packageInlineUses(project, goDoc.fileName, go);
       names = uses.get(t.ident) ?? [];
     }
     const fragments = fragmentsNamed(inspection, names);
@@ -289,17 +294,14 @@ function templateSections(project: Project, doc: vscode.TextDocument): Section[]
 }
 
 /** Which fragments the InlineHTML constants of a Go file's package are passed to
- * NewInlineFragment with: in the file, and in the files beside it. */
-function packageInlineUses(file: string, text: string): Map<string, string[]> {
+ * NewInlineFragment with: in the file as it is now, and in the files beside it as
+ * the last inspection read them. */
+function packageInlineUses(project: Project, file: string, text: string): Map<string, string[]> {
   const out = inlineUses(text);
   const dir = path.dirname(file);
-  try {
-    for (const name of fs.readdirSync(dir)) {
-      if (!name.endsWith(".go") || path.join(dir, name) === file) continue;
-      for (const [ident, fragments] of inlineUses(fs.readFileSync(path.join(dir, name), "utf8"))) out.set(ident, [...(out.get(ident) ?? []), ...fragments]);
-    }
-  } catch {
-    // Only the file's own uses, then.
+  for (const [other, uses] of project.inlineUses) {
+    if (other === file || path.dirname(other) !== dir) continue;
+    for (const [ident, fragments] of uses) out.set(ident, [...(out.get(ident) ?? []), ...fragments]);
   }
   return out;
 }
@@ -309,13 +311,12 @@ async function parentSlots(project: Project, parent: Parent | undefined): Promis
   if (!parent) return undefined;
   if (parent.inline !== undefined) return { ...templateSlots(parent.inline), template: `the inline template of ${parent.name ?? "the fragment"}` };
   const inspection = project.inspection;
-  const template = parent.template ?? inspection?.fragments.find((f) => f.name === parent.name && !f.inline && f.template)?.template;
+  const template = parent.template ?? (parent.name !== undefined ? templateByName(inspection, parent.name) : undefined);
   if (!template) return undefined;
   const ext = inspection?.templateExtension ?? "";
-  const roots = [...new Set([inspection?.templateRoot || "templates", "templates"])];
-  for (const root of roots) {
+  {
     for (const candidate of [template, template + ext]) {
-      const file = path.join(project.root, root, candidate);
+      const file = path.join(project.templateDir, candidate);
       const open = vscode.workspace.textDocuments.find((d) => d.uri.scheme === "file" && d.fileName === file);
       let text: string | undefined = open?.getText();
       if (text === undefined) {
@@ -329,6 +330,33 @@ async function parentSlots(project: Project, parent: Parent | undefined): Promis
     }
   }
   return undefined;
+}
+
+/** goChanged is whether a Go file of the project has unsaved changes the type table
+ * may not reflect: anything but the text of its inline templates. */
+async function goChanged(project: Project): Promise<boolean> {
+  for (const d of vscode.workspace.textDocuments) {
+    if (d.languageId !== "go" || d.uri.scheme !== "file" || !d.isDirty || !d.fileName.startsWith(project.root + path.sep)) continue;
+    let saved: string;
+    try {
+      saved = await fs.promises.readFile(d.fileName, "utf8");
+    } catch {
+      return true;
+    }
+    if (outsideInline(d.getText()) !== outsideInline(saved)) return true;
+  }
+  return false;
+}
+
+/** outsideInline is Go text with its inline templates' text taken out. */
+function outsideInline(go: string): string {
+  let out = "";
+  let at = 0;
+  for (const r of inlineTemplates(go)) {
+    out += go.slice(at, r.start);
+    at = r.end;
+  }
+  return out + go.slice(at);
 }
 
 /** WithSlotFragment("…"): the slots the parent fragment's template calls. */
@@ -425,7 +453,7 @@ class Hover implements vscode.HoverProvider {
   async provideHover(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.Hover | undefined> {
     const { enabled, project } = await projectFor(this.projects, doc);
     if (!enabled) return undefined;
-    const range = doc.getWordRangeAtPosition(pos, /[A-Za-z_][\w-]*/);
+    const range = doc.getWordRangeAtPosition(pos, /[\p{L}_][\p{L}\p{N}_-]*/u);
     if (!range) return undefined;
     const word = doc.getText(range);
     const text = doc.getText();
@@ -510,6 +538,8 @@ class Diagnostics {
         if (this.virtual.regionsOf(doc).length > 0) void this.virtual.sync(doc);
         else this.collection.delete(doc.uri);
         void this.checkSlots(doc);
+        // Unsaved Go code pauses the field warnings of every template.
+        for (const html of vscode.workspace.textDocuments) if (html.languageId === "html" && html.uri.scheme === "file") this.schedule(html);
       }, 400));
       return;
     }
@@ -554,8 +584,10 @@ class Diagnostics {
     const dataSeverity = mode === "information" ? vscode.DiagnosticSeverity.Information : vscode.DiagnosticSeverity.Warning;
     const types = project.inspection.types ?? {};
     // While the application does not start, the type table is the one from before
-    // whatever stopped it — likely the very change being made — so nothing is said.
-    for (const section of project.error ? [] : templateSections(project, doc)) {
+    // whatever stopped it — likely the very change being made — so nothing is
+    // said; nor while an inspection is under way or Go code is changed unsaved.
+    const paused = project.error !== undefined || project.pending || (await goChanged(project));
+    for (const section of paused ? [] : templateSections(project, doc)) {
       for (const f of walk(text, section.start, section.end, section.data, types, { embedded: project.embedded }).findings) {
         const d = new vscode.Diagnostic(new vscode.Range(doc.positionAt(f.start), doc.positionAt(f.end)), f.message, dataSeverity);
         d.source = "collage";

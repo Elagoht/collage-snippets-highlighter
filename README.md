@@ -221,7 +221,7 @@ and in the inline template of a `NewInlineFragment`, the extension completes:
 | `{{with .Author}}{{.‸` | the value's; `{{else}}` goes back to the outer dot |
 | `{{$v.‸`, `{{$.‸` | a variable's, the template's data |
 | `{{$‸` | the variables in reach |
-| `{{.Tags.key.‸` | a `map[string]V`'s value |
+| `{{.Tags.key.‸` | a `map[string]V`'s value, a named map's too |
 | `WithSlotFragment("‸"` | in Go: the slots the parent fragment's template calls |
 
 When one template is rendered by fragments of different types, it offers every
@@ -241,22 +241,32 @@ known for certain:
   library (`time.Time`, `template.HTML`), anything below a template function's
   result or a parenthesised value;
 - inside `{{define}}` and `{{block}}`, whose data is whatever invokes them;
-- a named container (`type Posts []Post`): its methods complete, but the
-  inspection does not say its element type, so a `{{range}}` over it is unknown;
-- a struct's embedded field (`{{.Base.ID}}`): the inspection lists the fields it
-  promotes, not the field itself, so a name any struct in the project embeds is
-  never reported;
+- a type name two packages share (`ambiguous` in the inspection, collage
+  v0.51.2);
+- with collage before v0.51.1: a named container's (`type Posts []Post`) element,
+  which that inspection does not say — its methods still complete — and a
+  struct's embedded field (`{{.Base.ID}}`), which it does not list, so a name any
+  struct in the project embeds is never reported;
 - a partial reached only through `{{template "…" .X}}`: no fragment renders it, so
   it gets neither completion nor warnings;
 - a slot binding whose template calls a slot by a computed name or includes
   another template, or whose parent is not built in the same expression or from a
-  variable assigned from `NewFragment` in the same file.
+  variable assigned from `NewFragment` earlier in the same function; a parent
+  known only by a name several fragments with different templates share.
 
-What it knows is the last successful inspection. While the application does not
-build or start — a compile error, or a type error the startup check rejects —
-completion uses what it knew before, and the warnings about fields pause, since
-the change that stopped it is likely the one they would be judged against; saving
-a template or a Go file tries again.
+A template file is matched to its fragments by its exact path under the template
+directory: the inspection's `templateRoot`, or, when the fragments' templates are
+not there (`os.DirFS("templates")` with `Root: "."`), the directory below the
+project they are found under.
+
+What it knows is the last successful inspection. The warnings about fields
+pause while the application does not build or start — a compile error, or a type
+error the startup check rejects — while an inspection is under way, and while a
+Go file of the project has unsaved changes outside its inline templates: the type
+table may be the one from before the very change being made. Completion keeps
+using what it knew. Saving a Go file inspects again (a save during an inspection
+is inspected after it), and so does saving a template while the last inspection
+failed.
 
 ## Plugins' collage.json
 

@@ -153,13 +153,14 @@ export function resolve(base: Value, names: string[], types: Types, opts: Option
     for (const t of cur.types) {
       const r = lookup(t, name, types);
       if ("found" in r) next.push(r.found);
-      else if ("missing" in r) on.push(t.text);
+      // Named as collage names it: the type the pointers lead to.
+      else if ("missing" in r) on.push(deref(t, types).text);
       else unknown = true;
     }
     if (next.length === 0 && on.length > 0 && !unknown) {
       if (opts.embedded?.has(name)) return { value: UNKNOWN };
       const candidates = cur.types.flatMap((t) => members(t, types).map((m) => m.name));
-      return { value: UNKNOWN, missing: { index, name, on, suggestion: closest(name, candidates) } };
+      return { value: UNKNOWN, missing: { index, name, on: [...new Set(on)], suggestion: closest(name, candidates) } };
     }
     cur = value(next, unknown);
   }
@@ -289,9 +290,9 @@ export interface Finding {
   message: string;
 }
 
-const IDENT = "[\\p{L}_][\\p{L}\\p{N}_]*";
-const CHAIN = new RegExp(`^(\\$[\\p{L}\\p{N}_]*)?((?:\\.${IDENT})+)$`, "u");
-const VARIABLE = /^\$[\p{L}\p{N}_]*$/u;
+const IDENT = "[\\p{L}_][\\p{L}\\p{Nd}_]*";
+const CHAIN = new RegExp(`^(\\$[\\p{L}\\p{Nd}_]*)?((?:\\.${IDENT})+)$`, "u");
+const VARIABLE = /^\$[\p{L}\p{Nd}_]*$/u;
 
 /** The offset of the "}}" closing an action whose content starts at from: string
  * literals skipped, so `{{"}}"}}` closes at the second; -1 when unclosed. */
@@ -532,24 +533,24 @@ export function completeAt(text: string, start: number, end: number, offset: num
   if (open < start || text.lastIndexOf("}}", offset - 1) > open) return undefined;
   if (inComment(text, offset)) return undefined;
   const before = text.slice(open + 2, offset);
-  const after = /^[\p{L}\p{N}_]*/u.exec(text.slice(offset))?.[0] ?? "";
+  const after = /^[\p{L}\p{Nd}_]*/u.exec(text.slice(offset))?.[0] ?? "";
   const { scope } = walk(text, start, end, root, types, opts, offset);
 
-  const m = new RegExp(`(\\$[\\p{L}\\p{N}_]*)?((?:\\.${IDENT})*)\\.([\\p{L}\\p{N}_]*)$`, "u").exec(before);
+  const m = new RegExp(`(\\$[\\p{L}\\p{Nd}_]*)?((?:\\.${IDENT})*)\\.([\\p{L}\\p{Nd}_]*)$`, "u").exec(before);
   if (m) {
     const lead = before[m.index - 1];
     // A field of a parenthesised result, or the dot in a number: not known.
-    if (lead !== undefined && /[\p{L}\p{N}_)\]"'`]/u.test(lead)) return undefined;
+    if (lead !== undefined && /[\p{L}\p{Nd}_)\]"'`]/u.test(lead)) return undefined;
     const base = m[1] ? scope.vars.get(m[1]) ?? UNKNOWN : scope.dot;
     const names = m[2] ? m[2].slice(1).split(".") : [];
     const r = resolve(base, names, types, opts);
     if (r.missing) return undefined;
     return { kind: "members", items: offered(r.value, types), start: offset - m[3].length, end: offset + after.length };
   }
-  const v = /\$([\p{L}\p{N}_]*)$/u.exec(before);
+  const v = /\$([\p{L}\p{Nd}_]*)$/u.exec(before);
   if (v) {
     const lead = before[v.index - 1];
-    if (lead !== undefined && /[\p{L}\p{N}_)]/u.test(lead)) return undefined;
+    if (lead !== undefined && /[\p{L}\p{Nd}_)]/u.test(lead)) return undefined;
     return {
       kind: "variables",
       items: [...scope.vars].map(([name, value]) => ({ name, value })),
@@ -575,7 +576,7 @@ export function typeLabel(v: Value): string {
  */
 export function embeddedFields(go: string): string[] {
   const out = new Set<string>();
-  const embedded = /^\s*\*?(?:[\p{L}_][\p{L}\p{N}_]*\.)?(\p{Lu}[\p{L}\p{N}_]*)(?:\[[^\]]*\])?\s*(?:`[^`]*`|"[^"]*")?\s*(?:\/\/.*)?$/u;
+  const embedded = /^\s*\*?(?:[\p{L}_][\p{L}\p{Nd}_]*\.)?(\p{Lu}[\p{L}\p{Nd}_]*)(?:\[[^\]]*\])?\s*(?:`[^`]*`|"[^"]*")?\s*(?:\/\/.*)?$/u;
   for (const m of go.matchAll(/\bstruct\s*\{/g)) {
     // The body, braces matched, so a nested struct type does not end it; only
     // its own lines, at depth one, are its fields.

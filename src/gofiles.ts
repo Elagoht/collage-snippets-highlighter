@@ -6,16 +6,13 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { embeddedFields } from "./datatypes";
 import { inlineUses } from "./embedded";
-import type { Inspection } from "./project";
+import type { Inspection, InspectedType } from "./project";
 
-/** atLeast is whether a module version is at least min; an unknown one is not. */
-export function atLeast(version: string | undefined, min: string): boolean {
-  const parse = (v: string) => (/^v(\d+)\.(\d+)\.(\d+)/.exec(v) ?? []).slice(1).map(Number);
-  const a = parse(version ?? "");
-  const b = parse(min);
-  if (a.length !== 3) return false;
-  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i];
-  return true;
+/** listsEmbedded is whether a type table marks embedded fields, as collage
+ * v0.51.1 does; one that marks none may be older, and the Go source is read for
+ * them instead. */
+export function listsEmbedded(types: Record<string, InspectedType> | undefined): boolean {
+  return Object.values(types ?? {}).some((t) => t.fields?.some((f) => f.embedded));
 }
 
 /**

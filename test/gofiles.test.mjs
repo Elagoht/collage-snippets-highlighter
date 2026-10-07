@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const require = createRequire(import.meta.url);
-const { atLeast, findTemplateDir, scanGo } = require("../out/src/gofiles.js");
+const { listsEmbedded, findTemplateDir, scanGo } = require("../out/src/gofiles.js");
 
 const project = (files) => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "collage-gofiles-")));
@@ -30,12 +30,10 @@ test("the template directory: the declared root, or where the templates are", as
   assert.equal(await findTemplateDir(other, inspection("tpl", ["pages/missing.html"])), join(other, "tpl"), "found nowhere: the declared root");
 });
 
-test("collage's version decides whether embedded fields are read from source", () => {
-  assert.equal(atLeast("v0.51.1", "v0.51.1"), true);
-  assert.equal(atLeast("v0.52.0", "v0.51.1"), true);
-  assert.equal(atLeast("v0.51.0", "v0.51.1"), false);
-  assert.equal(atLeast("v0.27.0", "v0.51.1"), false);
-  assert.equal(atLeast(undefined, "v0.51.1"), false);
+test("the type table decides whether embedded fields are read from source", () => {
+  assert.equal(listsEmbedded({ "a.P": { kind: "struct", fields: [{ name: "Base", type: "a.Base", embedded: true }] } }), true);
+  assert.equal(listsEmbedded({ "a.P": { kind: "struct", fields: [{ name: "ID", type: "int" }] } }), false, "a table from before v0.51.1, or no embedding: read the source");
+  assert.equal(listsEmbedded(undefined), false);
 });
 
 test("Go files read once: embedded fields when asked, NewInlineFragment's constants", async () => {

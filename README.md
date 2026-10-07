@@ -264,9 +264,11 @@ pause while the application does not build or start — a compile error, or a ty
 error the startup check rejects — while an inspection is under way, and while a
 Go file of the project has unsaved changes outside its inline templates: the type
 table may be the one from before the very change being made. Completion keeps
-using what it knew. Saving a Go file inspects again (a save during an inspection
-is inspected after it), and so does saving a template while the last inspection
-failed.
+using what it knew. A Go file changed on disk — saved, or changed by a git
+checkout or a generator — is inspected again after a moment's quiet, and the
+warnings stay paused from the change until that inspection lands (a change during
+an inspection is inspected after it); saving a template does the same while the
+last inspection failed.
 
 ## Plugins' collage.json
 

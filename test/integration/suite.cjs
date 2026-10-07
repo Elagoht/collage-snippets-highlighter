@@ -179,6 +179,11 @@ async function run() {
   await vscode.commands.executeCommand("type", { text: ">" });
   await until("the tag closed", async () => inline.lineAt(at("<span").line).text === "<span></span>", 5000);
 
+  // Last, since it changes main.go: a field renamed in Go and in its template.
+  // Between the Go save and the inspection that follows it, the table is the old
+  // one; nothing may be judged against it — no "Heading" warning, ever.
+  await renameField(doc, folder);
+
   // plugins-config.json: a misspelt key under a known plugin.
   const cfg = await vscode.workspace.openTextDocument(path.join(folder, "plugins-config.json"));
   await vscode.window.showTextDocument(cfg);
@@ -187,6 +192,37 @@ async function run() {
     return d.length ? d : undefined;
   }, 30000);
   assert.ok(cfgDiags.some((d) => /cookiee/.test(d.message) || /not allowed/i.test(d.message)), JSON.stringify(cfgDiags.map((d) => d.message)));
+}
+
+async function renameField(doc, folder) {
+  const before = (await vscode.commands.executeCommand("collage._state"))[0].inspections;
+  const goDoc = await vscode.workspace.openTextDocument(path.join(folder, "main.go"));
+  const goEd = await vscode.window.showTextDocument(goDoc);
+  const decl = goDoc.getText().indexOf("\tTitle  string");
+  await goEd.edit((e) => e.replace(new vscode.Range(goDoc.positionAt(decl + 1), goDoc.positionAt(decl + 6)), "Heading"));
+  const html = await vscode.window.showTextDocument(doc);
+  const line = doc.lineAt(5).text;
+  const at = line.indexOf(".Title") + 1;
+  await html.edit((e) => e.replace(new vscode.Range(5, at, 5, at + 5), "Heading"));
+  await doc.save();
+  const heading = () => vscode.languages.getDiagnostics(doc.uri).filter((x) => /Heading/.test(x.message)).map((x) => x.message);
+  await sleep(1500); // the template's check, paused by the unsaved Go
+  assert.deepEqual(heading(), [], "warned while Go was unsaved");
+  await goDoc.save();
+  const end = Date.now() + 120000;
+  let landedAt;
+  for (;;) {
+    assert.deepEqual(heading(), [], "a warning from the table before the save's inspection landed");
+    const state = (await vscode.commands.executeCommand("collage._state"))[0];
+    if (state.error) throw new Error("inspection failed after the rename: " + state.error);
+    if (state.inspections > before && !state.pending) landedAt ??= Date.now();
+    if (landedAt && Date.now() - landedAt > 2000) break;
+    if (Date.now() > end) throw new Error("the rename was never inspected");
+    await sleep(100);
+  }
+  // On the new table, the old name is the one that is wrong.
+  await html.edit((e) => e.insert(new vscode.Position(6, 0), "{{.Title}}"));
+  await until("the old name flagged", async () => vscode.languages.getDiagnostics(doc.uri).some((x) => /no field or method Title/.test(x.message)), 30000);
 }
 
 module.exports = { run };

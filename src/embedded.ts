@@ -44,7 +44,7 @@ export function tokens(go: string): GoToken[] {
       i = j + 1;
     } else if (/[\p{L}_]/u.test(c)) {
       let j = i + 1;
-      while (j < go.length && /[\p{L}\p{N}_]/u.test(go[j])) j++;
+      while (j < go.length && /[\p{L}\p{Nd}_]/u.test(go[j])) j++;
       out.push({ kind: "ident", text: go.slice(i, j), start: i, end: j });
       i = j;
     } else {

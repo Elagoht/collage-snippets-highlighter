@@ -71,7 +71,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("collage.showOutput", () => projects.log.show()),
     // For the integration tests: what the extension knows, as data.
     vscode.commands.registerCommand("collage._state", async () =>
-      (await projects.all()).map((p) => ({ root: p.root, pages: p.inspection?.pages.map((x) => x.name), manifests: p.manifests.map((m) => m.name), error: p.error })),
+      (await projects.all()).map((p) => ({ root: p.root, pages: p.inspection?.pages.map((x) => x.name), inspections: p.inspections, pending: p.pending, manifests: p.manifests.map((m) => m.name), error: p.error })),
     ),
   );
 
@@ -223,7 +223,7 @@ class Completion implements vscode.CompletionItemProvider {
 
   private functions(doc: vscode.TextDocument, pos: vscode.Position, project: Project | undefined): vscode.CompletionItem[] {
     const before = doc.lineAt(pos.line).text.slice(0, pos.character);
-    if (/[.$][\p{L}\p{N}_]*$/u.test(before)) return []; // a field or a variable, not a function
+    if (/[.$][\p{L}\p{Nd}_]*$/u.test(before)) return []; // a field or a variable, not a function
     const items = functionsFor(project).map((f, i) => {
       const item = new vscode.CompletionItem({ label: f.name, detail: " " + f.signature.slice(f.name.length).trim(), description: f.source }, vscode.CompletionItemKind.Function);
       item.insertText = new vscode.SnippetString(f.insert);
@@ -453,7 +453,7 @@ class Hover implements vscode.HoverProvider {
   async provideHover(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.Hover | undefined> {
     const { enabled, project } = await projectFor(this.projects, doc);
     if (!enabled) return undefined;
-    const range = doc.getWordRangeAtPosition(pos, /[\p{L}_][\p{L}\p{N}_-]*/u);
+    const range = doc.getWordRangeAtPosition(pos, /[\p{L}_][\p{L}\p{Nd}_-]*/u);
     if (!range) return undefined;
     const word = doc.getText(range);
     const text = doc.getText();

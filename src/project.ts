@@ -6,7 +6,7 @@ import * as cp from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { atLeast, findTemplateDir, scanGo } from "./gofiles";
+import { findTemplateDir, listsEmbedded, scanGo } from "./gofiles";
 import { Rerun } from "./rerun";
 
 export interface Inspection {
@@ -74,10 +74,13 @@ export class Project {
   inlineUses: Map<string, Map<string, string[]>> = new Map();
   /** The directory the fragments' template paths are relative to. */
   templateDir: string;
-  /** The collage version go.mod requires, as `go list -m` says. */
-  collageVersion: string | undefined;
   error: string | undefined;
   private readonly runs = new Rerun();
+  /** How many inspections have succeeded: for the integration tests. */
+  inspections = 0;
+  /** A change is known whose inspection has not started: a save waiting out its debounce. */
+  private stale = false;
+  private timer: NodeJS.Timeout | undefined;
 
   constructor(readonly root: string, private readonly log: vscode.OutputChannel, private readonly onChange: () => void) {
     this.templateDir = path.join(root, "templates");
@@ -85,7 +88,21 @@ export class Project {
 
   /** Whether an inspection is running or asked for: what is known may be about to change. */
   get pending(): boolean {
-    return this.runs.pending;
+    return this.stale || this.runs.pending;
+  }
+
+  /** schedule inspects again after a quiet moment; until then the table is
+   * pending, so nothing is judged against what the change may have changed. */
+  schedule(delay = 1500): void {
+    clearTimeout(this.timer);
+    const wasPending = this.pending;
+    this.stale = true;
+    this.timer = setTimeout(() => void this.refresh(), delay);
+    if (!wasPending) this.onChange();
+  }
+
+  dispose(): void {
+    clearTimeout(this.timer);
   }
 
   /** Refreshes the inspection and the manifests, one refresh at a time. One asked
@@ -93,7 +110,15 @@ export class Project {
    * the build started. */
   refresh(): Promise<void> {
     // onChange at the start too: pending now, what depends on the table waits.
-    return this.runs.run(() => this.load(), () => this.onChange(), () => this.onChange());
+    clearTimeout(this.timer);
+    return this.runs.run(
+      () => {
+        this.stale = false; // what was changed before now is in this inspection
+        return this.load();
+      },
+      () => this.onChange(),
+      () => this.onChange(),
+    );
   }
 
   private async load(): Promise<void> {
@@ -106,8 +131,11 @@ export class Project {
     this.manifests = manifests;
     if (inspection) {
       this.inspection = inspection;
+      this.inspections++;
       this.templateDir = await findTemplateDir(this.root, inspection);
-      const scan = await scanGo(this.root, !atLeast(this.collageVersion, "v0.51.1"));
+      // collage v0.51.1 lists embedded fields; a table that marks none may be
+      // from before it, whatever go.mod says (a replace to an older checkout).
+      const scan = await scanGo(this.root, !listsEmbedded(inspection.types));
       this.embedded = scan.embedded;
       this.inlineUses = scan.uses;
     }
@@ -150,7 +178,6 @@ export class Project {
     }
     const out: Manifest[] = [];
     for (const mod of parseStream(listing)) {
-      if (mod.Path === "github.com/Elagoht/collage") this.collageVersion = mod.Version;
       if (!mod.Dir) continue;
       try {
         const body = await vscode.workspace.fs.readFile(vscode.Uri.file(path.join(mod.Dir, "collage.json")));
@@ -218,21 +245,30 @@ export class Projects implements vscode.Disposable {
   readonly onDidChange = this.changed.event;
   readonly log = vscode.window.createOutputChannel("Collage");
   private readonly status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
-  private timer: NodeJS.Timeout | undefined;
-
   constructor() {
     this.status.command = "collage.refresh";
     const watcher = vscode.workspace.createFileSystemWatcher("**/go.mod");
     const rediscover = () => {
       this.discovered = undefined;
+      this.projects.forEach((p) => p.dispose());
       this.projects.clear();
       void this.all().then((ps) => ps.forEach((p) => void p.refresh()));
     };
     watcher.onDidChange(rediscover);
     watcher.onDidCreate(rediscover);
     watcher.onDidDelete(rediscover);
+    // Go files changed on disk by anything — a save, git checkout, a generator.
+    const goFiles = vscode.workspace.createFileSystemWatcher("**/*.go");
+    const changed = (uri: vscode.Uri) => {
+      if (/[\\/](vendor|node_modules)[\\/]/.test(uri.fsPath)) return;
+      void this.forFile(uri.fsPath).then((p) => p?.schedule());
+    };
+    goFiles.onDidChange(changed);
+    goFiles.onDidCreate(changed);
+    goFiles.onDidDelete(changed);
     this.disposables.push(
       watcher,
+      goFiles,
       this.log,
       this.status,
       this.changed,
@@ -244,8 +280,8 @@ export class Projects implements vscode.Disposable {
           return;
         }
         if (doc.languageId !== "go" && !doc.fileName.endsWith("go.mod")) return;
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => void this.forFile(doc.fileName).then((p) => p?.refresh()), 1500);
+        // Pending from this moment: the table may not have what was just saved.
+        void this.forFile(doc.fileName).then((p) => p?.schedule());
       }),
     );
   }
@@ -295,7 +331,7 @@ export class Projects implements vscode.Disposable {
   }
 
   dispose(): void {
-    clearTimeout(this.timer);
+    this.projects.forEach((p) => p.dispose());
     this.disposables.forEach((d) => d.dispose());
   }
 }

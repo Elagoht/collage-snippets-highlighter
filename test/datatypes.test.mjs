@@ -10,7 +10,8 @@ const { parseType, resolve, rangeOf, dataOf, fragmentsOfTemplate, fragmentsNamed
 const { inlineTemplates, inlineUses } = require("../out/src/embedded.js");
 
 // The fixture is `go run . collage-inspect` of a scaffolded demo with a blog
-// package added, on collage v0.51.1: Post{Base; Attrs map[string]any;
+// package added, on collage v0.51.2 — Note and Legacy are two packages' blog.Note,
+// which the table marks ambiguous: Post{Base; Attrs map[string]any;
 // Labels TagMap (map[string]Meta); Owner UserRef (*User); Başlık; Title; Author *User;
 // Comments []Comment; Tags map[string]Meta; Related []*Post; Extra any;
 // Grid [2][]string}, methods URL, Excerpt(n) on *Post, WordCount(a, b);
@@ -63,7 +64,7 @@ test("chains: fields, pointers followed, methods, map keys", () => {
   assert.equal(resolve(post, ["Extra", "Anything"], types).missing, undefined, "an interface is unknown");
   assert.equal(resolve(post, ["Author", "Bio", "X"], types).missing, undefined, "an opaque type is unknown");
   const miss = resolve(post, ["Author", "Nmae"], types).missing;
-  assert.deepEqual([miss.index, miss.name, miss.on, miss.suggestion], [1, "Nmae", ["*blog.User"], "Name"]);
+  assert.deepEqual([miss.index, miss.name, miss.on, miss.suggestion], [1, "Nmae", ["blog.User"], "Name"], "named as collage names it: what the pointer points to");
 });
 
 test("range gives the element, and the index or key", () => {
@@ -86,7 +87,7 @@ test("range gives the element, and the index or key", () => {
 });
 
 test("completing {{. and chains", () => {
-  assert.deepEqual(names(complete("<h1>{{.‸")), ["Attrs", "Author", "Base", "Başlık", "Comments", "Excerpt", "Extra", "Grid", "ID", "Labels", "Owner", "Related", "Slug", "Tags", "Title", "URL", "WordCount"]);
+  assert.deepEqual(names(complete("<h1>{{.‸")), ["Attrs", "Author", "Base", "Başlık", "Comments", "Excerpt", "Extra", "Grid", "ID", "Labels", "Legacy", "Note", "Owner", "Related", "Slug", "Tags", "Title", "URL", "WordCount"]);
   assert.deepEqual(names(complete("{{.Author.‸}}")), ["Bio", "Email", "Initials", "Name"]);
   assert.deepEqual(names(complete("{{ .Tags.go.‸ }}")), ["Extra", "Score"]);
   assert.deepEqual(names(complete("{{.Ti‸")), names(complete("{{.‸")), "the word typed so far is replaced, not narrowed here");
@@ -127,7 +128,7 @@ test("a template several fragments render: the union, flagged only where none ha
   assert.ok(names(c).includes("Title") && names(c).includes("Name"));
   const title = c.items.find((i) => i.name === "Title");
   assert.deepEqual([title.on, title.of], [["blog.Post"], 2], "said to be only some types'");
-  assert.deepEqual(findings("{{.Title}} {{.Name}} {{.Nope}}", card), [["Nope", "none of blog.Post, *blog.User has a field or method Nope"]]);
+  assert.deepEqual(findings("{{.Title}} {{.Name}} {{.Zzzz}}", card), [["Zzzz", "none of blog.Post, blog.User has a field or method Zzzz"]]);
 });
 
 test("names no type has are reported, and nothing else", () => {
@@ -146,7 +147,7 @@ test("names no type has are reported, and nothing else", () => {
   ].join("\n");
   assert.deepEqual(findings(text), [
     ["Titel", "type blog.Post has no field or method Titel (did you mean Title?)"],
-    ["Nmae", "type *blog.User has no field or method Nmae (did you mean Name?)"],
+    ["Nmae", "type blog.User has no field or method Nmae (did you mean Name?)"],
     ["Bdy", "type blog.Comment has no field or method Bdy (did you mean Body?)"],
     ["Autor", "type blog.Comment has no field or method Autor (did you mean Author?)"],
     ["Titel", "type blog.Post has no field or method Titel (did you mean Title?)"],
@@ -177,7 +178,11 @@ test("silent where the data is not known", () => {
   const list = dataOf(fragmentsOfTemplate(inspection, "partials/list.html"), old);
   assert.deepEqual(walk("{{range .}}{{.Whatever}}{{end}}{{.Len}}", 0, 38, list, old).findings, []);
   assert.deepEqual(completeAt("{{.", 0, 3, 3, list, old).items.map((i) => i.name), ["Len"]);
-  // A type name two packages share (collage v0.51.2): ambiguous, so unknown.
+  // A type name two packages share (collage v0.51.2): ambiguous, so unknown —
+  // the real entry first, then a synthesized one at the root.
+  assert.deepEqual(types["blog.Note"], { kind: "struct", ambiguous: true });
+  assert.deepEqual(findings("{{.Note.Text}}{{.Legacy.Old}}{{.Note.Whatever}}"), []);
+  assert.deepEqual(names(complete("{{.Note.‸")), []);
   const amb = structuredClone(types);
   amb["blog.Post"] = { kind: "struct", ambiguous: true };
   assert.deepEqual(walk("{{.Whatever}}{{.Author.Nope}}", 0, 29, dataOf(fragmentsOfTemplate(inspection, "pages/post.html"), amb), amb).findings, []);
@@ -231,9 +236,12 @@ test("named pointers and maps: through the table's elem and key", () => {
   assert.deepEqual(names(complete("{{.Owner.‸")), ["Bio", "Email", "Initials", "Name"]);
   assert.deepEqual(names(complete("{{.Labels.go.‸")), ["Extra", "Score"]);
   assert.deepEqual(findings("{{.Owner.Name}}{{.Labels.any.Score}}{{.Labels.any.Scor}}").map((f) => f[0]), ["Scor"]);
+  assert.deepEqual(findings("{{.Owner.Nme}}").map((f) => f[1]), ["type blog.User has no field or method Nme (did you mean Name?)"], "a named pointer: the type it points to");
 });
 
 test("identifiers in any script", () => {
+  // A digit is what Go's unicode.IsDigit says: ² is not one, so .Title² is .Title and ².
+  assert.deepEqual(findings("{{.Title²}}{{.Başlık١}}").map((f) => f[0]), ["Başlık١"]);
   assert.deepEqual(findings("{{.Başlık}}{{$ş := .Author}}{{$ş.Name}}{{$ş.Nme}}").map((f) => f[0]), ["Nme"]);
   assert.deepEqual(names(complete("{{$ş := .Author}}{{$ş.‸")), ["Bio", "Email", "Initials", "Name"]);
   assert.deepEqual(complete("{{$ş := .Author}}{{$‸").items.map((v) => v.name).sort(), ["$", "$ş"]);

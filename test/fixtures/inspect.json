@@ -277,6 +277,10 @@
     }
    ]
   },
+  "blog.Note": {
+   "kind": "struct",
+   "ambiguous": true
+  },
   "blog.Post": {
    "kind": "struct",
    "fields": [
@@ -304,6 +308,14 @@
     {
      "name": "Başlık",
      "type": "string"
+    },
+    {
+     "name": "Note",
+     "type": "blog.Note"
+    },
+    {
+     "name": "Legacy",
+     "type": "blog.Note"
     },
     {
      "name": "Title",

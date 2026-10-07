@@ -100,6 +100,7 @@ var decoders = map[string]func() *schema{
 	"elagoht/tenant.Duration":     durationOrNanoseconds,
 	"elagoht/errortrack.Duration": durationOrNanoseconds,
 	"elagoht/fail2ban.Duration":   durationOrNanoseconds,
+	"elagoht/health.Duration":     durationOrNanoseconds,
 	"elagoht/live.Duration": func() *schema {
 		return &schema{Type: "string", Pattern: durationPattern, Examples: []string{"30s", "5m"}}
 	},

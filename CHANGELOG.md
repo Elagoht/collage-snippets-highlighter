@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.0
+
+- **`plugins-config.json` knows `elagoht/health`** (collage-health v0.1.0):
+  `livePath`, `readyPath`, `checkTimeout`, `cacheFor`, `details` and
+  `maxInFlight` complete and are checked; the two durations take `"2s"` or a
+  number of nanoseconds.
+- **`elagoht/deploy`'s `target` completes its values** (collage-deploy v0.1.1's
+  typed constants): `cloudflare`, `github-pages`, `netlify`, `vercel`, or empty.
+- Schema regenerated from the latest release of every plugin, against collage
+  v0.53.0. No template functions were added in collage v0.53.0 or by any plugin,
+  so the catalog and snippets are unchanged.
+
 ## 0.10.0
 
 - **`plugins-config.json` knows `elagoht/deploy`** (collage-deploy v0.1.0): its

@@ -353,7 +353,14 @@
       "properties": {
         "target": {
           "type": "string",
-          "description": "Target is the host to write for: \"netlify\", \"cloudflare\", \"vercel\" or \"github-pages\". Empty writes nothing."
+          "description": "Target is the host to write for: \"netlify\", \"cloudflare\", \"vercel\" or \"github-pages\". Empty writes nothing.",
+          "enum": [
+            "",
+            "cloudflare",
+            "github-pages",
+            "netlify",
+            "vercel"
+          ]
         }
       },
       "markdownDescription": "A collage plugin that turns a static build's captured headers and redirects into the configuration files a static host reads.\n\n[collage-deploy](https://github.com/Elagoht/collage-deploy)",
@@ -603,6 +610,64 @@
         }
       },
       "markdownDescription": "A collage plugin for flash messages: a message an action sets before it redirects, shown once by the page it redirects to.\n\n[collage-flash](https://github.com/Elagoht/collage-flash)",
+      "additionalProperties": false
+    },
+    "elagoht/health": {
+      "type": "object",
+      "description": "Package health answers liveness and readiness probes for a collage application, turns readiness false while the server drains, and can shed load past a cap on requests in flight.",
+      "properties": {
+        "cacheFor": {
+          "description": "how long one readiness result is reused, default \"1s\"",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
+          ]
+        },
+        "checkTimeout": {
+          "description": "per check, default \"2s\"",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
+          ]
+        },
+        "details": {
+          "type": "boolean",
+          "description": "a JSON body naming each check, default false"
+        },
+        "livePath": {
+          "type": "string",
+          "description": "liveness endpoint, default \"/healthz\""
+        },
+        "maxInFlight": {
+          "type": "integer",
+          "description": "requests served at once at most, default 0: no cap"
+        },
+        "readyPath": {
+          "type": "string",
+          "description": "readiness endpoint, default \"/readyz\""
+        }
+      },
+      "markdownDescription": "Package health answers liveness and readiness probes for a collage application, turns readiness false while the server drains, and can shed load past a cap on requests in flight.\n\n[collage-health](https://github.com/Elagoht/collage-health)",
       "additionalProperties": false
     },
     "elagoht/highlight": {

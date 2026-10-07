@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0
 
 - **Your data's fields complete in templates.** With collage v0.49.0 or later,
   `{{.` offers the fields and methods of the type the template's fragment renders
@@ -15,11 +15,16 @@
   function's result, a `{{define}}`, or a name some struct embeds; for a
   template several fragments render, only a name none of them has. Never an
   error, whatever `collage.diagnostics` says.
-- Named containers, named maps and named pointers are followed through the
-  table's `elem` and `key`, and embedded fields come from the table, with collage
-  v0.51.1; an `ambiguous` type (v0.51.2) is unknown. Identifiers in any script
-  (`{{.Başlık}}`) are read as Go reads them. Field warnings pause while an
-  inspection runs, while it fails, and while Go code has unsaved changes.
+- **Requires collage v0.49.0 or later** for the data's types (older inspections
+  have none, and nothing changes there), and **v0.51.1 or later** for named
+  containers, named maps and named pointers — followed through the table's `elem`
+  and `key` — and embedded fields (`{{.Base.ID}}`); before it, a range over a
+  named container is unknown and the names the project's structs embed are never
+  reported. A type name two packages share (`ambiguous`, v0.51.2) is unknown.
+- Identifiers in any script (`{{.Başlık}}`, `$ş`) are read as Go reads them.
+- The field warnings pause while the type table may be out of date: from a Go
+  file's save — or any change on disk, a git checkout — until its inspection
+  lands, while an inspection fails, and while Go code has unsaved changes.
 - **`WithSlotFragment("` completes** the slots the parent fragment's template
   calls, and `WithSlotFragment` or `WithSlotResolver` binding into one it never
   calls is a warning.

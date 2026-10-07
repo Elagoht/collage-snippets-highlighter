@@ -41,6 +41,16 @@ import (
 	"github.com/Elagoht/collage/pkg/collage"
 )
 
+// The post's data: completed at {{. in its template.
+type User struct{ Name string }
+
+type Post struct {
+	Title  string
+	Author *User
+}
+
+func loadPost(context.Context, *collage.RenderContext) (Post, error) { return Post{}, nil }
+
 func main() {
 	flag.Parse()
 	app, err := collage.New(&collage.Config{
@@ -51,7 +61,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	post := collage.NewFragment("post", "pages/post.html").Build()
+	aside := collage.NewInlineFragment("aside", "<aside></aside>").Build()
+	post := collage.NewFragment("post", "pages/post.html").
+		WithData(collage.Load(loadPost)).
+		WithSlotFragment("aside", aside).
+		Build()
 	if err := app.RegisterPage(collage.NewPage("post").WithContent(post).WithPath("en", "/blog/{slug}").Build()); err != nil {
 		panic(err)
 	}
@@ -73,6 +87,7 @@ writeFileSync(join(project, "templates/pages/post.html"), [
   `<a href="{{pageURL "posts"}}">x</a>`,
   `<link href="{{asset "/static/app.css"}}">{{range flashes}}{{.Text}}{{end}}`,
   `<form action="{{actionURL ""}}"></form><form action="{{actionURL "vote" ""}}"></form>`,
+  `<h1>{{.Title}}</h1>{{with .Author}}<p>{{.Name}}</p>{{end}}{{slot "aside"}}`,
   "",
 ].join("\n"));
 writeFileSync(join(project, "static/app.css"), "body{}\n");

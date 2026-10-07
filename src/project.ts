@@ -6,6 +6,7 @@ import * as cp from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { embeddedFields } from "./datatypes";
 
 export interface Inspection {
   version: number;
@@ -14,12 +15,33 @@ export interface Inspection {
   defaultLocale: string;
   locales: string[];
   pages: { name: string; paths: Record<string, string>; params?: string[]; layout?: string; content?: string; fragmentPaths?: { fragment: string; locale: string; pattern: string; params?: string[] }[] }[];
-  fragments: { name: string; template: string; slots?: string[] }[];
+  fragments: InspectedFragment[];
   documents: { name: string; paths: Record<string, string>; params?: string[]; contentType: string }[];
   actions: { name: string; paths: Record<string, string>; methods: string[] }[];
   templateFuncs: string[];
   plugins: { name: string; version: string }[];
   mounts: { prefix: string; files: string[] }[];
+  /** The named types the fragments' data reaches, by Go name (collage v0.49.0). */
+  types?: Record<string, InspectedType>;
+}
+
+export interface InspectedFragment {
+  name: string;
+  /** The template's path under the template root; empty for an inline fragment. */
+  template: string;
+  slots?: string[];
+  inline?: boolean;
+  /** The Go type the template sees as dot: "blog.Post", "nil" for no data, null when unknown (collage v0.49.0). */
+  dataType?: string | null;
+  /** false when the fragment was built WithoutTypeCheck. */
+  typeCheck?: boolean;
+}
+
+/** The shape of a named type: its exported fields and the methods of it and its pointer. */
+export interface InspectedType {
+  kind: string;
+  fields?: { name: string; type: string }[];
+  methods?: { name: string; args: number; returns: string }[];
 }
 
 export interface Manifest {
@@ -36,6 +58,9 @@ export interface Manifest {
 export class Project {
   inspection: Inspection | undefined;
   manifests: Manifest[] = [];
+  /** The names Go source in the project embeds in a struct: never reported as
+   * missing from a template's data, since the type table does not list them. */
+  embedded: Set<string> = new Set();
   error: string | undefined;
   private running: Promise<void> | undefined;
 
@@ -58,7 +83,10 @@ export class Project {
       cfg.get<boolean>("inspect", true) ? this.inspect(go) : Promise.resolve(undefined),
     ]);
     this.manifests = manifests;
-    if (inspection) this.inspection = inspection;
+    if (inspection) {
+      this.inspection = inspection;
+      this.embedded = await embeddedIn(this.root);
+    }
   }
 
   private async inspect(go: string): Promise<Inspection | undefined> {
@@ -117,6 +145,35 @@ export class Project {
     const rel = path.relative(rootDir, file);
     return rel.startsWith("..") ? undefined : rel.split(path.sep).join("/");
   }
+}
+
+/** embeddedIn reads the Go files under root for the fields their structs embed. */
+async function embeddedIn(root: string): Promise<Set<string>> {
+  const out = new Set<string>();
+  let files = 0;
+  const visit = async (dir: string): Promise<void> => {
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (files > 5000) return;
+      if (e.isDirectory()) {
+        if (!e.name.startsWith(".") && e.name !== "vendor" && e.name !== "node_modules") await visit(path.join(dir, e.name));
+      } else if (e.name.endsWith(".go")) {
+        files++;
+        try {
+          for (const name of embeddedFields(await fs.readFile(path.join(dir, e.name), "utf8"))) out.add(name);
+        } catch {
+          // an unreadable file embeds nothing we can see
+        }
+      }
+    }
+  };
+  await visit(root);
+  return out;
 }
 
 /** `go list -m -json` prints a stream of JSON objects, not an array. */

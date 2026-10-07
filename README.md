@@ -22,6 +22,9 @@ pages — for collage's own template functions and those of its
   `{{slot "…"}}`, mounted files in `{{asset "…"}}` — and a warning for a page or a
   file that does not exist, and go-to-definition from a name to the Go code
   declaring it.
+- **Your data's fields**: `{{.` completes the fields and methods of the type the
+  template's fragment renders, through `.Author.`, `{{range}}`, `{{with}}` and
+  variables, and a name the data does not have is underlined.
 - **Every plugin you depend on**, published or not: its `collage.json` adds its
   template functions, attributes, snippets and configuration schema.
 - **`plugins-config.json` validation**: completion, descriptions and a warning for
@@ -203,6 +206,55 @@ Running the application's `main` builds the application without serving it. A
 program that connects to a database while it builds would do so here too; turn it
 off with `"collage.inspect": false`, and completion falls back to the functions it
 knows.
+
+## Your data's fields
+
+From collage v0.49.0 the inspection says what type each fragment's data is —
+`WithData(collage.Load(loadPost))` with `loadPost` returning `blog.Post` — and
+the fields and methods of every type it reaches. In a template a fragment renders,
+and in the inline template of a `NewInlineFragment`, the extension completes:
+
+| Where | What |
+| --- | --- |
+| `{{.‸`, `{{.Author.‸` | the fields and methods of the data, pointers followed |
+| `{{range .Comments}}{{.‸` | the element's, and `$i, $v :=` typed as index and element (key and value for a map) |
+| `{{with .Author}}{{.‸` | the value's; `{{else}}` goes back to the outer dot |
+| `{{$v.‸`, `{{$.‸` | a variable's, the template's data |
+| `{{$‸` | the variables in reach |
+| `{{.Tags.key.‸` | a `map[string]V`'s value |
+| `WithSlotFragment("‸"` | in Go: the slots the parent fragment's template calls |
+
+When one template is rendered by fragments of different types, it offers every
+type's names, saying which have each one, and warns only about a name none of
+them has. A warning reads as the startup check would put it:
+`type blog.Post has no field or method Titel (did you mean Title?)`. The same goes
+for `WithSlotFragment` and `WithSlotResolver` binding into a slot the parent's
+template never calls. These are always warnings, never errors: collage's own check
+when the application starts is the authority, and the editor is early feedback,
+quieter than it, never noisier. So nothing is reported where the type is not
+known for certain:
+
+- a fragment with no data, a data type the inspection could not tell, or one
+  built `WithoutTypeCheck()` — when one template serves several fragments, any one
+  of them silences it;
+- an interface (`any`), a `map[string]any`'s values, a type from the standard
+  library (`time.Time`, `template.HTML`), anything below a template function's
+  result or a parenthesised value;
+- inside `{{define}}` and `{{block}}`, whose data is whatever invokes them;
+- a named container (`type Posts []Post`): its methods complete, but the
+  inspection does not say its element type, so a `{{range}}` over it is unknown;
+- a struct's embedded field (`{{.Base.ID}}`): the inspection lists the fields it
+  promotes, not the field itself, so a name any struct in the project embeds is
+  never reported;
+- a partial reached only through `{{template "…" .X}}`: no fragment renders it, so
+  it gets neither completion nor warnings;
+- a slot binding whose template calls a slot by a computed name or includes
+  another template, or whose parent is not built in the same expression or from a
+  variable assigned from `NewFragment` in the same file.
+
+What it knows is the last successful inspection: until the application builds
+and starts again — a compile error, or a type error the startup check rejects —
+completion uses what it knew before.
 
 ## Plugins' collage.json
 

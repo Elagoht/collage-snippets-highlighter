@@ -10,7 +10,7 @@ export interface Region {
   end: number;
 }
 
-interface Token {
+export interface GoToken {
   kind: "ident" | "raw" | "punct" | "other";
   text: string;
   start: number;
@@ -19,8 +19,8 @@ interface Token {
 
 /** tokens reads Go's tokens, skipping whitespace and comments. Interpreted strings
  * and runes are one token each; what they say does not matter here. */
-function tokens(go: string): Token[] {
-  const out: Token[] = [];
+export function tokens(go: string): GoToken[] {
+  const out: GoToken[] = [];
   let i = 0;
   while (i < go.length) {
     const c = go[i];
@@ -55,32 +55,95 @@ function tokens(go: string): Token[] {
   return out;
 }
 
-const content = (t: Token): Region => ({ start: t.start + 1, end: t.text.endsWith("`") && t.text.length > 1 ? t.end - 1 : t.end });
+const content = (t: GoToken): Region => ({ start: t.start + 1, end: t.text.endsWith("`") && t.text.length > 1 ? t.end - 1 : t.end });
 
-/** inlineRegions returns the HTML regions of a Go file, in order. */
-export function inlineRegions(go: string): Region[] {
+/** An inline template and what it belongs to: the fragment name NewInlineFragment
+ * was given as a literal, or the const or var that holds it. */
+export interface InlineTemplate extends Region {
+  /** The fragment's name, when the raw string is NewInlineFragment's own argument
+   * and the name before it is a string literal. */
+  fragment?: string;
+  /** The identifier declared as collage.InlineHTML that holds the raw string. */
+  ident?: string;
+}
+
+/** stringValue is a Go string literal's value; undefined for anything else. */
+export function stringValue(t: GoToken | undefined): string | undefined {
+  if (!t) return undefined;
+  if (t.kind === "raw") return t.text.slice(1, t.text.endsWith("`") && t.text.length > 1 ? -1 : undefined);
+  if (t.kind !== "other" || !t.text.startsWith('"')) return undefined;
+  try {
+    const v: unknown = JSON.parse(t.text);
+    return typeof v === "string" ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** callArgs splits the arguments of the call whose "(" is toks[open] at its
+ * top-level commas; each argument is its tokens. */
+export function callArgs(toks: GoToken[], open: number): { args: GoToken[][]; close: number } {
+  const args: GoToken[][] = [[]];
+  let depth = 0;
+  for (let j = open; j < toks.length; j++) {
+    const u = toks[j];
+    if (u.text === "(" || u.text === "[" || u.text === "{") {
+      if (depth++ === 0) continue;
+    } else if (u.text === ")" || u.text === "]" || u.text === "}") {
+      if (--depth === 0) return { args: args.filter((a, i) => a.length > 0 || i < args.length - 1), close: j };
+    } else if (u.text === "," && depth === 1) {
+      args.push([]);
+      continue;
+    }
+    args[args.length - 1].push(u);
+  }
+  return { args, close: toks.length };
+}
+
+/** inlineTemplates returns the HTML regions of a Go file, in order, with what each belongs to. */
+export function inlineTemplates(go: string): InlineTemplate[] {
   const toks = tokens(go);
-  const out: Region[] = [];
+  const out: InlineTemplate[] = [];
   for (let i = 0; i < toks.length; i++) {
     const t = toks[i];
     if (t.kind !== "ident") continue;
     if (t.text === "NewInlineFragment" && toks[i + 1]?.text === "(") {
       // The first raw string among the call's arguments, the parentheses balanced.
-      let depth = 0;
-      for (let j = i + 1; j < toks.length; j++) {
-        const u = toks[j];
-        if (u.text === "(") depth++;
-        else if (u.text === ")" && --depth === 0) break;
-        else if (u.kind === "raw" && depth === 1) {
-          out.push(content(u));
-          break;
-        }
+      const { args } = callArgs(toks, i + 1);
+      for (let a = 0; a < args.length; a++) {
+        const raw = args[a][0]?.kind === "raw" ? args[a][0] : undefined;
+        if (!raw) continue;
+        const name = a === 1 && args[0].length === 1 ? stringValue(args[0][0]) : undefined;
+        out.push({ ...content(raw), ...(name !== undefined && { fragment: name }) });
+        break;
       }
     } else if (t.text === "InlineHTML" && toks[i + 1]?.text === "=" && toks[i + 2]?.kind === "raw") {
-      out.push(content(toks[i + 2]));
+      // `name collage.InlineHTML = ` or `name InlineHTML = `.
+      const before = toks[i - 1]?.text === "." ? toks[i - 3] : toks[i - 1];
+      out.push({ ...content(toks[i + 2]), ...(before?.kind === "ident" && { ident: before.text }) });
     }
   }
   return out;
+}
+
+/** inlineUses maps each identifier a Go file passes to NewInlineFragment as its
+ * template to the fragment names it is passed with: `NewInlineFragment("row", rowHTML)`. */
+export function inlineUses(go: string): Map<string, string[]> {
+  const toks = tokens(go);
+  const out = new Map<string, string[]>();
+  for (let i = 0; i < toks.length; i++) {
+    if (toks[i].kind !== "ident" || toks[i].text !== "NewInlineFragment" || toks[i + 1]?.text !== "(") continue;
+    const { args } = callArgs(toks, i + 1);
+    const name = args[0]?.length === 1 ? stringValue(args[0][0]) : undefined;
+    const ident = args[1]?.length === 1 && args[1][0].kind === "ident" ? args[1][0].text : undefined;
+    if (name !== undefined && ident) out.set(ident, [...(out.get(ident) ?? []), name]);
+  }
+  return out;
+}
+
+/** inlineRegions returns the HTML regions of a Go file, in order. */
+export function inlineRegions(go: string): Region[] {
+  return inlineTemplates(go).map((r) => ({ start: r.start, end: r.end }));
 }
 
 /** virtualHTML is the Go file with everything but its HTML blanked out: every

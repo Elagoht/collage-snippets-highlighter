@@ -14,6 +14,9 @@ import { allCalls, stringArgAt } from "./template";
 import { namesFor, unknownName } from "./names";
 import { functionSnippets, headerEdits, packageName } from "./gosnippets";
 import { register as registerInlineHTML, VirtualDocuments } from "./inlinehtml";
+import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, typeLabel, walk, type Value } from "./datatypes";
+import { inlineTemplates, inlineUses } from "./embedded";
+import { slotBindingAt, slotBindings, templateSlots, type Parent } from "./goslots";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -47,13 +50,16 @@ const SCHEMA_URI = vscode.Uri.parse("collage-schema://collage/plugins-config.jso
 export function activate(context: vscode.ExtensionContext): void {
   const projects = new Projects();
   const diagnostics = vscode.languages.createDiagnosticCollection("collage");
+  const slotDiagnostics = vscode.languages.createDiagnosticCollection("collage-slots");
   const schema = new SchemaProvider(projects);
   const virtual = new VirtualDocuments();
 
   context.subscriptions.push(
     projects,
     diagnostics,
-    vscode.languages.registerCompletionItemProvider("html", new Completion(projects), '"', "{", " ", "(", "|", "-", "/"),
+    slotDiagnostics,
+    vscode.languages.registerCompletionItemProvider("html", new Completion(projects), '"', "{", " ", "(", "|", "-", "/", ".", "$"),
+    vscode.languages.registerCompletionItemProvider("go", new SlotNames(projects, virtual), '"'),
     vscode.languages.registerCompletionItemProvider("go", new ManifestSnippets(projects, "go", virtual)),
     vscode.languages.registerCompletionItemProvider("go", new FunctionSnippets(projects, virtual)),
     vscode.languages.registerHoverProvider("html", new Hover(projects)),
@@ -71,11 +77,14 @@ export function activate(context: vscode.ExtensionContext): void {
 
   registerInlineHTML(context, virtual);
 
-  const check = new Diagnostics(projects, diagnostics, virtual);
+  const check = new Diagnostics(projects, diagnostics, slotDiagnostics, virtual);
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((d) => check.schedule(d)),
     vscode.workspace.onDidChangeTextDocument((e) => check.schedule(e.document)),
-    vscode.workspace.onDidCloseTextDocument((d) => diagnostics.delete(d.uri)),
+    vscode.workspace.onDidCloseTextDocument((d) => {
+      diagnostics.delete(d.uri);
+      slotDiagnostics.delete(d.uri);
+    }),
     projects.onDidChange(() => {
       vscode.workspace.textDocuments.forEach((d) => check.schedule(d));
       schema.changed();
@@ -169,9 +178,42 @@ class Completion implements vscode.CompletionItemProvider {
         return item;
       });
     }
-    if (insideAction(text, offset)) return this.functions(doc, pos, project);
+    if (insideAction(text, offset)) {
+      const data = project?.inspection ? this.data(doc, text, offset, project) : undefined;
+      return data ?? this.functions(doc, pos, project);
+    }
     if (insideTag(text, offset)) return this.attributes(doc, pos, project);
     return undefined;
+  }
+
+  /** The fields and methods of the data after `.`, the variables after `$`. */
+  private data(doc: vscode.TextDocument, text: string, offset: number, project: Project): vscode.CompletionItem[] | undefined {
+    const types = project.inspection?.types ?? {};
+    const section = templateSections(project, doc).find((s) => offset >= s.start && offset <= s.end);
+    if (!section) return undefined;
+    const found = completeAt(text, section.start, section.end, offset, section.data, types, { embedded: project.embedded });
+    if (!found) return undefined;
+    const range = new vscode.Range(doc.positionAt(found.start), doc.positionAt(found.end));
+    if (found.kind === "variables") {
+      return found.items.map((v) => {
+        const item = new vscode.CompletionItem({ label: v.name, description: typeLabel(v.value) }, vscode.CompletionItemKind.Variable);
+        item.range = range;
+        item.sortText = v.name === "$" ? "1" : "0" + v.name;
+        return item;
+      });
+    }
+    return found.items.map((m) => {
+      const method = m.args !== undefined;
+      const only = m.on.length < m.of ? ` · only ${m.on.join(", ")}` : "";
+      const item = new vscode.CompletionItem(
+        { label: m.name, detail: method ? (m.args ? ` (${m.args} argument${m.args === 1 ? "" : "s"})` : " ()") : undefined, description: m.type + only },
+        method ? vscode.CompletionItemKind.Method : vscode.CompletionItemKind.Field,
+      );
+      item.range = range;
+      item.sortText = (only ? "1" : "0") + (method ? "1" : "0") + m.name;
+      item.documentation = new vscode.MarkdownString().appendCodeblock(method ? `func (${m.on.join(" | ")}) ${m.name}(${m.args ? "…" : ""}) ${m.type}` : `${m.name} ${m.type}`, "go");
+      return item;
+    });
   }
 
   private functions(doc: vscode.TextDocument, pos: vscode.Position, project: Project | undefined): vscode.CompletionItem[] {
@@ -207,6 +249,108 @@ class Completion implements vscode.CompletionItemProvider {
       return item;
     });
     return items.concat(manifestSnippetItems(project, "html"));
+  }
+}
+
+/** A template and its data: a template file whole, or one inline template of a Go file. */
+interface Section {
+  start: number;
+  end: number;
+  data: Value;
+}
+
+/** The templates in a document a fragment renders, each with the data it sees:
+ * an HTML file under the template root, or the inline templates of the Go file a
+ * virtual document stands for. */
+function templateSections(project: Project, doc: vscode.TextDocument): Section[] {
+  const inspection = project.inspection;
+  if (!inspection) return [];
+  const types = inspection.types ?? {};
+  const goUri = VirtualDocuments.goUriOf(doc.uri);
+  if (!goUri) {
+    const fragments = fragmentsOfTemplate(inspection, project.templateName(doc.fileName), path.relative(project.root, doc.fileName).split(path.sep).join("/"));
+    return fragments.length ? [{ start: 0, end: doc.getText().length, data: dataOf(fragments, types) }] : [];
+  }
+  const goDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === goUri.toString());
+  if (!goDoc) return [];
+  const go = goDoc.getText();
+  let uses: Map<string, string[]> | undefined;
+  const out: Section[] = [];
+  for (const t of inlineTemplates(go)) {
+    let names = t.fragment !== undefined ? [t.fragment] : [];
+    if (t.ident) {
+      uses ??= packageInlineUses(goDoc.fileName, go);
+      names = uses.get(t.ident) ?? [];
+    }
+    const fragments = fragmentsNamed(inspection, names);
+    if (fragments.length) out.push({ start: t.start, end: t.end, data: dataOf(fragments, types) });
+  }
+  return out;
+}
+
+/** Which fragments the InlineHTML constants of a Go file's package are passed to
+ * NewInlineFragment with: in the file, and in the files beside it. */
+function packageInlineUses(file: string, text: string): Map<string, string[]> {
+  const out = inlineUses(text);
+  const dir = path.dirname(file);
+  try {
+    for (const name of fs.readdirSync(dir)) {
+      if (!name.endsWith(".go") || path.join(dir, name) === file) continue;
+      for (const [ident, fragments] of inlineUses(fs.readFileSync(path.join(dir, name), "utf8"))) out.set(ident, [...(out.get(ident) ?? []), ...fragments]);
+    }
+  } catch {
+    // Only the file's own uses, then.
+  }
+  return out;
+}
+
+/** The slots the template of the fragment a slot is bound on calls; undefined when it cannot be read. */
+async function parentSlots(project: Project, parent: Parent | undefined): Promise<{ names: string[]; complete: boolean; template: string } | undefined> {
+  if (!parent) return undefined;
+  if (parent.inline !== undefined) return { ...templateSlots(parent.inline), template: `the inline template of ${parent.name ?? "the fragment"}` };
+  const inspection = project.inspection;
+  const template = parent.template ?? inspection?.fragments.find((f) => f.name === parent.name && !f.inline && f.template)?.template;
+  if (!template) return undefined;
+  const ext = inspection?.templateExtension ?? "";
+  const roots = [...new Set([inspection?.templateRoot || "templates", "templates"])];
+  for (const root of roots) {
+    for (const candidate of [template, template + ext]) {
+      const file = path.join(project.root, root, candidate);
+      const open = vscode.workspace.textDocuments.find((d) => d.uri.scheme === "file" && d.fileName === file);
+      let text: string | undefined = open?.getText();
+      if (text === undefined) {
+        try {
+          text = await fs.promises.readFile(file, "utf8");
+        } catch {
+          continue;
+        }
+      }
+      return { ...templateSlots(text), template };
+    }
+  }
+  return undefined;
+}
+
+/** WithSlotFragment("…"): the slots the parent fragment's template calls. */
+class SlotNames implements vscode.CompletionItemProvider {
+  constructor(private readonly projects: Projects, private readonly virtual: VirtualDocuments) {}
+
+  async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.CompletionItem[] | undefined> {
+    if (this.virtual.regionAt(doc, pos)) return undefined; // HTML there, not Go
+    const { enabled, project } = await projectFor(this.projects, doc);
+    if (!enabled || !project) return undefined;
+    const binding = slotBindingAt(doc.getText(), doc.offsetAt(pos));
+    if (!binding) return undefined;
+    const slots = await parentSlots(project, binding.parent);
+    if (!slots) return undefined;
+    const range = new vscode.Range(doc.positionAt(binding.start + 1), doc.positionAt(binding.closed ? binding.end - 1 : binding.end));
+    return slots.names.map((name, i) => {
+      const item = new vscode.CompletionItem({ label: name, description: `slot of ${slots.template}` }, vscode.CompletionItemKind.Value);
+      item.range = range;
+      item.sortText = String(i).padStart(4, "0");
+      item.filterText = name;
+      return item;
+    });
   }
 }
 
@@ -350,7 +494,12 @@ function escape(s: string): string {
 class Diagnostics {
   private readonly timers = new Map<string, NodeJS.Timeout>();
 
-  constructor(private readonly projects: Projects, private readonly collection: vscode.DiagnosticCollection, private readonly virtual: VirtualDocuments) {}
+  constructor(
+    private readonly projects: Projects,
+    private readonly collection: vscode.DiagnosticCollection,
+    private readonly slots: vscode.DiagnosticCollection,
+    private readonly virtual: VirtualDocuments,
+  ) {}
 
   schedule(doc: vscode.TextDocument): void {
     if (doc.languageId === "go" && doc.uri.scheme === "file") {
@@ -360,6 +509,7 @@ class Diagnostics {
       this.timers.set(key, setTimeout(() => {
         if (this.virtual.regionsOf(doc).length > 0) void this.virtual.sync(doc);
         else this.collection.delete(doc.uri);
+        void this.checkSlots(doc);
       }, 400));
       return;
     }
@@ -392,7 +542,41 @@ class Diagnostics {
         }
       });
     }
+    // Names the data does not have: a warning at most, since the startup check
+    // is the authority and this is early feedback.
+    const dataSeverity = mode === "information" ? vscode.DiagnosticSeverity.Information : vscode.DiagnosticSeverity.Warning;
+    const types = project.inspection.types ?? {};
+    for (const section of templateSections(project, doc)) {
+      for (const f of walk(text, section.start, section.end, section.data, types, { embedded: project.embedded }).findings) {
+        const d = new vscode.Diagnostic(new vscode.Range(doc.positionAt(f.start), doc.positionAt(f.end)), f.message, dataSeverity);
+        d.source = "collage";
+        out.push(d);
+      }
+    }
     this.collection.set(target, out);
+  }
+
+  /** WithSlotFragment and WithSlotResolver binding into a slot the parent's template never calls. */
+  private async checkSlots(doc: vscode.TextDocument): Promise<void> {
+    const mode = vscode.workspace.getConfiguration("collage").get<string>("diagnostics", "warning");
+    const project = await this.projects.forFile(doc.fileName);
+    if (mode === "off" || !project?.inspection) {
+      this.slots.delete(doc.uri);
+      return;
+    }
+    const severity = mode === "information" ? vscode.DiagnosticSeverity.Information : vscode.DiagnosticSeverity.Warning;
+    const version = doc.version;
+    const out: vscode.Diagnostic[] = [];
+    for (const b of slotBindings(doc.getText())) {
+      if (b.method === "WithSlot" || !b.closed || b.value === "") continue;
+      const slots = await parentSlots(project, b.parent);
+      if (!slots?.complete || slots.names.includes(b.value)) continue;
+      const calls = slots.names.length ? `it calls ${slots.names.map((n) => JSON.stringify(n)).join(", ")}` : "it calls none";
+      const d = new vscode.Diagnostic(new vscode.Range(doc.positionAt(b.start), doc.positionAt(b.end)), `${slots.template} never calls {{slot ${JSON.stringify(b.value)}}}; ${calls}.`, severity);
+      d.source = "collage";
+      out.push(d);
+    }
+    if (doc.version === version) this.slots.set(doc.uri, out);
   }
 }
 

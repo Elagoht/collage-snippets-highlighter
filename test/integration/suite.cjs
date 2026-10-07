@@ -79,6 +79,32 @@ async function run() {
   const text = hover.flatMap((h) => h.contents.map((c) => (typeof c === "string" ? c : c.value))).join("\n");
   assert.match(text, /flash messages/, "hover: " + text);
 
+  // The data's fields at {{. — line 5, the post's Post — and inside {{with .Author}}.
+  const fields = (await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", doc.uri, new vscode.Position(5, 7), ".")).items;
+  const field = fields.find((i) => label(i) === "Title");
+  assert.ok(field && field.kind === vscode.CompletionItemKind.Field, "no Title at {{.: " + fields.map(label).slice(0, 30).join(", "));
+  assert.ok(!fields.map(label).includes("pageURL"), "functions offered after a dot");
+  const inner = (await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", doc.uri, new vscode.Position(5, doc.lineAt(5).text.indexOf("{{.Name") + 3), ".")).items.map(label);
+  assert.ok(inner.includes("Name") && !inner.includes("Title"), "with .Author does not narrow: " + inner.slice(0, 30).join(", "));
+
+  // A field the data does not have: a warning, beside the unknown page.
+  const editor0 = vscode.window.activeTextEditor;
+  await editor0.edit((e) => e.insert(new vscode.Position(6, 0), "{{.Titel}}"));
+  const dataDiags = await until("a data diagnostic", async () => {
+    const d = vscode.languages.getDiagnostics(doc.uri).filter((x) => x.source === "collage" && /Titel/.test(x.message));
+    return d.length ? d : undefined;
+  }, 30000);
+  assert.equal(dataDiags[0].severity, vscode.DiagnosticSeverity.Warning);
+  assert.match(dataDiags[0].message, /type main\.Post has no field or method Titel \(did you mean Title\?\)/);
+  await vscode.commands.executeCommand("workbench.action.files.revert");
+
+  // WithSlotFragment(" in Go: the slots the parent's template calls.
+  const main = await vscode.workspace.openTextDocument(path.join(folder, "main.go"));
+  await vscode.window.showTextDocument(main);
+  const slotAt = main.positionAt(main.getText().indexOf('WithSlotFragment("aside"') + 'WithSlotFragment("'.length);
+  const slotNames = (await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", main.uri, slotAt, '"')).items.map(label);
+  assert.ok(slotNames.includes("aside"), "no slot names: " + slotNames.slice(0, 30).join(", "));
+
   // Go function snippets bring the package clause and the imports they need.
   const header = async (file) => {
     const go = await vscode.workspace.openTextDocument(path.join(folder, file));

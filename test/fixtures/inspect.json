@@ -1,0 +1,416 @@
+{
+ "version": 1,
+ "templateRoot": "templates",
+ "templateExtension": ".html",
+ "defaultLocale": "en",
+ "locales": [
+  "en"
+ ],
+ "pages": [
+  {
+   "name": "home",
+   "paths": {
+    "en": "/"
+   },
+   "strategy": "static",
+   "layouts": [
+    "layout"
+   ],
+   "content": "home"
+  },
+  {
+   "name": "features",
+   "paths": {
+    "en": "/features"
+   },
+   "strategy": "static",
+   "layouts": [
+    "layout"
+   ],
+   "content": "features",
+   "fragmentPaths": [
+    {
+     "fragment": "demo-clock",
+     "locale": "en",
+     "pattern": "/fragments/clock"
+    }
+   ]
+  },
+  {
+   "name": "hello",
+   "paths": {
+    "en": "/hello"
+   },
+   "strategy": "dynamic",
+   "layouts": [
+    "layout"
+   ],
+   "content": "hello"
+  },
+  {
+   "name": "post",
+   "paths": {
+    "en": "/blog/{slug}"
+   },
+   "params": [
+    "slug"
+   ],
+   "strategy": "dynamic",
+   "layouts": [
+    "layout"
+   ],
+   "content": "post"
+  },
+  {
+   "name": "not-found",
+   "paths": {},
+   "strategy": "dynamic",
+   "layouts": [
+    "layout"
+   ],
+   "content": "not-found"
+  }
+ ],
+ "fragments": [
+  {
+   "name": "comment-list",
+   "template": "",
+   "handler": true,
+   "inline": true,
+   "dataType": "[]blog.Comment"
+  },
+  {
+   "name": "demo-clock",
+   "template": "",
+   "handler": true,
+   "inline": true,
+   "dataType": "fragments.clockView"
+  },
+  {
+   "name": "demo-counter",
+   "template": "",
+   "handler": true,
+   "inline": true,
+   "dataType": "fragments.counterView"
+  },
+  {
+   "name": "features",
+   "template": "pages/features.html",
+   "slots": [
+    "clock",
+    "counter"
+   ],
+   "dataType": "nil"
+  },
+  {
+   "name": "hello",
+   "template": "",
+   "handler": true,
+   "inline": true,
+   "dataType": "fragments.helloView"
+  },
+  {
+   "name": "home",
+   "template": "pages/home.html",
+   "dataType": "fragments.homeView"
+  },
+  {
+   "name": "layout",
+   "template": "layouts/default.html",
+   "dataType": "nil"
+  },
+  {
+   "name": "layout",
+   "template": "layouts/default.html",
+   "dataType": "nil"
+  },
+  {
+   "name": "layout",
+   "template": "layouts/default.html",
+   "dataType": "nil"
+  },
+  {
+   "name": "layout",
+   "template": "layouts/default.html",
+   "dataType": "nil"
+  },
+  {
+   "name": "layout",
+   "template": "layouts/default.html",
+   "dataType": "nil"
+  },
+  {
+   "name": "not-found",
+   "template": "",
+   "inline": true,
+   "dataType": "nil"
+  },
+  {
+   "name": "post",
+   "template": "pages/post.html",
+   "slots": [
+    "cards",
+    "comments",
+    "list"
+   ],
+   "handler": true,
+   "dataType": "blog.Post"
+  },
+  {
+   "name": "post-card",
+   "template": "partials/card.html",
+   "handler": true,
+   "dataType": "blog.Post"
+  },
+  {
+   "name": "post-list",
+   "template": "partials/list.html",
+   "handler": true,
+   "dataType": "blog.Posts"
+  },
+  {
+   "name": "user-card",
+   "template": "partials/card.html",
+   "handler": true,
+   "dataType": "*blog.User"
+  }
+ ],
+ "documents": [
+  {
+   "name": "health",
+   "paths": {
+    "en": "/healthz"
+   },
+   "contentType": "application/json"
+  }
+ ],
+ "actions": [
+  {
+   "name": "hello",
+   "paths": {
+    "en": "/hello"
+   },
+   "methods": [
+    "POST"
+   ]
+  },
+  {
+   "name": "count",
+   "paths": {
+    "en": "/api/count"
+   },
+   "methods": [
+    "POST"
+   ]
+  }
+ ],
+ "templateFuncs": [
+  "actionURL",
+  "asset",
+  "csrfToken",
+  "default",
+  "dict",
+  "formatTime",
+  "fragmentURL",
+  "fragmentURLIn",
+  "hoist",
+  "join",
+  "localeURL",
+  "lower",
+  "pageURL",
+  "pageURLIn",
+  "safeHTML",
+  "safeURL",
+  "slot",
+  "stylesheet",
+  "title",
+  "upper"
+ ],
+ "plugins": [],
+ "mounts": [
+  {
+   "prefix": "/static/",
+   "files": [
+    "/static/app.css",
+    "/static/app.js",
+    "/static/favicon.svg"
+   ]
+  }
+ ],
+ "types": {
+  "blog.Comment": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "Author",
+     "type": "*blog.User"
+    },
+    {
+     "name": "Body",
+     "type": "string"
+    },
+    {
+     "name": "At",
+     "type": "time.Time"
+    }
+   ]
+  },
+  "blog.Meta": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "Extra",
+     "type": "interface {}"
+    },
+    {
+     "name": "Score",
+     "type": "int"
+    }
+   ]
+  },
+  "blog.Post": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "ID",
+     "type": "int"
+    },
+    {
+     "name": "Attrs",
+     "type": "map[string]interface {}"
+    },
+    {
+     "name": "Title",
+     "type": "string"
+    },
+    {
+     "name": "Slug",
+     "type": "string"
+    },
+    {
+     "name": "Author",
+     "type": "*blog.User"
+    },
+    {
+     "name": "Comments",
+     "type": "[]blog.Comment"
+    },
+    {
+     "name": "Tags",
+     "type": "map[string]blog.Meta"
+    },
+    {
+     "name": "Related",
+     "type": "[]*blog.Post"
+    },
+    {
+     "name": "Extra",
+     "type": "interface {}"
+    },
+    {
+     "name": "Grid",
+     "type": "[2][]string"
+    }
+   ],
+   "methods": [
+    {
+     "name": "Excerpt",
+     "args": 1,
+     "returns": "string"
+    },
+    {
+     "name": "URL",
+     "args": 0,
+     "returns": "string"
+    },
+    {
+     "name": "WordCount",
+     "args": 2,
+     "returns": "int"
+    }
+   ]
+  },
+  "blog.Posts": {
+   "kind": "slice",
+   "methods": [
+    {
+     "name": "Len",
+     "args": 0,
+     "returns": "int"
+    }
+   ]
+  },
+  "blog.User": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "Name",
+     "type": "string"
+    },
+    {
+     "name": "Email",
+     "type": "string"
+    },
+    {
+     "name": "Bio",
+     "type": "template.HTML"
+    }
+   ],
+   "methods": [
+    {
+     "name": "Initials",
+     "args": 0,
+     "returns": "string"
+    }
+   ]
+  },
+  "fragments.clockView": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "Now",
+     "type": "time.Time"
+    },
+    {
+     "name": "Uptime",
+     "type": "string"
+    },
+    {
+     "name": "GoVersion",
+     "type": "string"
+    }
+   ]
+  },
+  "fragments.counterView": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "Count",
+     "type": "int64"
+    }
+   ]
+  },
+  "fragments.helloView": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "Name",
+     "type": "string"
+    },
+    {
+     "name": "RenderedAt",
+     "type": "time.Time"
+    }
+   ]
+  },
+  "fragments.homeView": {
+   "kind": "struct",
+   "fields": [
+    {
+     "name": "Name",
+     "type": "string"
+    }
+   ]
+  }
+ }
+}

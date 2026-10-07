@@ -20,7 +20,7 @@ export interface Call {
 
 const KEYWORDS = new Set(["if", "else", "with", "range", "end", "define", "template", "block", "break", "continue"]);
 
-interface Token {
+export interface Token {
   kind: "string" | "word" | "pipe" | "open" | "close" | "assign" | "other";
   text: string;
   value: string;
@@ -30,7 +30,7 @@ interface Token {
 }
 
 /** Tokens of the action text from `from`, stopping at `to` or at the closing }}. */
-function lex(text: string, from: number, to: number): Token[] {
+export function lex(text: string, from: number, to: number): Token[] {
   const out: Token[] = [];
   let i = from;
   while (i < to) {

@@ -229,7 +229,8 @@ export function fragmentsOfTemplate(inspection: Inspection, name: string | undef
   const ext = inspection.templateExtension || "";
   const files = inspection.fragments.filter((f) => !f.inline && f.template);
   const exact = name ? files.filter((f) => f.template === name || f.template + ext === name) : [];
-  if (exact.length || !fromRoot) return exact;
+  // A file outside the template root (name undefined) is no template at all.
+  if (exact.length || !name || !fromRoot) return exact;
   return files.filter((f) => [f.template, f.template + ext].some((t) => fromRoot === t || fromRoot.endsWith("/" + t)));
 }
 
@@ -354,6 +355,9 @@ export function walk(text: string, start: number, end: number, root: Value, type
 
   for (const a of actions(text, start, end)) {
     if (at !== undefined && at >= a.from && (at <= a.to || !a.closed)) return { findings, scope: scope() };
+    // An action still being typed runs into the next one — `{{.` before an
+    // `{{end}}` — and the template does not parse: nothing after it is certain.
+    if (text.slice(a.from, a.to).includes("{{")) return { findings, scope: scope() };
     const toks = lex(text, a.from, a.to);
     if (toks.length === 0) continue;
     const head = toks[0].kind === "word" ? toks[0].text : "";

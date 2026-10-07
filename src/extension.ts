@@ -517,6 +517,13 @@ class Diagnostics {
     const key = doc.uri.toString();
     clearTimeout(this.timers.get(key));
     this.timers.set(key, setTimeout(() => void this.check(doc), 400));
+    // A template edited may now call the slot a Go file binds.
+    if (doc.uri.scheme === "file") {
+      clearTimeout(this.timers.get("slots"));
+      this.timers.set("slots", setTimeout(() => {
+        for (const go of vscode.workspace.textDocuments) if (go.languageId === "go" && go.uri.scheme === "file") void this.checkSlots(go);
+      }, 800));
+    }
   }
 
   private async check(doc: vscode.TextDocument): Promise<void> {
@@ -546,7 +553,9 @@ class Diagnostics {
     // is the authority and this is early feedback.
     const dataSeverity = mode === "information" ? vscode.DiagnosticSeverity.Information : vscode.DiagnosticSeverity.Warning;
     const types = project.inspection.types ?? {};
-    for (const section of templateSections(project, doc)) {
+    // While the application does not start, the type table is the one from before
+    // whatever stopped it — likely the very change being made — so nothing is said.
+    for (const section of project.error ? [] : templateSections(project, doc)) {
       for (const f of walk(text, section.start, section.end, section.data, types, { embedded: project.embedded }).findings) {
         const d = new vscode.Diagnostic(new vscode.Range(doc.positionAt(f.start), doc.positionAt(f.end)), f.message, dataSeverity);
         d.source = "collage";

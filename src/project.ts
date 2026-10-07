@@ -243,6 +243,11 @@ export class Projects implements vscode.Disposable {
       this.changed,
       // A saved Go file may have registered a page, bound a slot, added a plugin.
       vscode.workspace.onDidSaveTextDocument((doc) => {
+        // A saved template may fix what kept the application from starting.
+        if (doc.languageId === "html") {
+          void this.forFile(doc.fileName).then((p) => (p?.error ? p.refresh() : undefined));
+          return;
+        }
         if (doc.languageId !== "go" && !doc.fileName.endsWith("go.mod")) return;
         clearTimeout(this.timer);
         this.timer = setTimeout(() => void this.forFile(doc.fileName).then((p) => p?.refresh()), 1500);

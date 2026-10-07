@@ -252,9 +252,11 @@ known for certain:
   another template, or whose parent is not built in the same expression or from a
   variable assigned from `NewFragment` in the same file.
 
-What it knows is the last successful inspection: until the application builds
-and starts again — a compile error, or a type error the startup check rejects —
-completion uses what it knew before.
+What it knows is the last successful inspection. While the application does not
+build or start — a compile error, or a type error the startup check rejects —
+completion uses what it knew before, and the warnings about fields pause, since
+the change that stopped it is likely the one they would be judged against; saving
+a template or a Go file tries again.
 
 ## Plugins' collage.json
 

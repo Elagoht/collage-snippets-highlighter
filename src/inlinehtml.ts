@@ -91,7 +91,7 @@ export function register(context: vscode.ExtensionContext, docs: VirtualDocument
   const go: vscode.DocumentSelector = { language: "go" };
   context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider(SCHEME, docs),
-    vscode.languages.registerCompletionItemProvider(go, new Completion(docs), "<", "/", " ", ":", '"', "{", "(", "|", "-", ".", "!", "=", ">", "*", "+"),
+    vscode.languages.registerCompletionItemProvider(go, new Completion(docs), "<", "/", " ", ":", '"', "{", "(", "|", "-", ".", "!", "=", ">", "*", "+", "$"),
     vscode.languages.registerHoverProvider(go, new Hover(docs)),
     vscode.languages.registerDefinitionProvider(go, new Definition(docs)),
     vscode.languages.registerFoldingRangeProvider(go, new Folding(docs)),

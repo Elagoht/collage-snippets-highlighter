@@ -146,6 +146,13 @@ test("names no type has are reported, and nothing else", () => {
   ]);
 });
 
+test("an action still being typed ends the check: the template does not parse", () => {
+  assert.deepEqual(findings("{{range .Comments}}{{.\n{{end}}{{.Title}}"), []);
+  assert.deepEqual(findings("{{.Titel}}{{range .Comments}}{{.\n{{end}}{{.Title}}").map((f) => f[0]), ["Titel"], "what comes before still counts");
+  // And completion there still sees the range.
+  assert.deepEqual(names(complete("{{range .Comments}}{{.‸\n{{end}}{{.Title}}")), ["At", "Author", "Body"]);
+});
+
 test("silent where the data is not known", () => {
   const all = "{{.Anything}}{{.A.B}}{{range .X}}{{.Y}}{{end}}";
   // A fragment with no data, a type null, a type the table lacks, WithoutTypeCheck.
@@ -195,4 +202,5 @@ test("a template file maps to its fragments by its path under the template root"
   // A template root the inspection does not name: matched by the path's end.
   assert.deepEqual(fragmentsOfTemplate(inspection, "templates/pages/post.html", "templates/pages/post.html").map((f) => f.name), ["post"]);
   assert.deepEqual(fragmentsOfTemplate(inspection, undefined, "static/x.html"), []);
+  assert.deepEqual(fragmentsOfTemplate(inspection, undefined, "docs/pages/post.html"), [], "a file outside the template root is no template");
 });

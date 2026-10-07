@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.0
+
+- **`plugins-config.json` knows `elagoht/deploy`** (collage-deploy v0.1.0): its
+  `target` key, the static host to write configuration files for, completes and
+  is checked.
+- **collage-redirects v0.2.0**: `noRedirectsFile` is gone from the schema, so it
+  is flagged as an unknown key.
+- Schema regenerated from the latest release of every plugin, against collage
+  v0.52.0. No template functions were added in collage v0.52.0, so the catalog
+  and snippets are unchanged.
+
 ## 0.9.0
 
 - **Your data's fields complete in templates.** With collage v0.49.0 or later,

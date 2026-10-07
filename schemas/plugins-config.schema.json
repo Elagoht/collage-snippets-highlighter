@@ -347,6 +347,18 @@
       "markdownDescription": "A collage plugin that compresses responses with Brotli and gzip.\n\n[collage-compress](https://github.com/Elagoht/collage-compress)",
       "additionalProperties": false
     },
+    "elagoht/deploy": {
+      "type": "object",
+      "description": "A collage plugin that turns a static build's captured headers and redirects into the configuration files a static host reads.",
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Target is the host to write for: \"netlify\", \"cloudflare\", \"vercel\" or \"github-pages\". Empty writes nothing."
+        }
+      },
+      "markdownDescription": "A collage plugin that turns a static build's captured headers and redirects into the configuration files a static host reads.\n\n[collage-deploy](https://github.com/Elagoht/collage-deploy)",
+      "additionalProperties": false
+    },
     "elagoht/devtoolbar": {
       "type": "object",
       "description": "A collage plugin that shows a small panel at the bottom of every page in development. It takes no configuration from JSON: it is configured in Go.",
@@ -1305,10 +1317,6 @@
         "file": {
           "type": "string",
           "description": "File is the redirects file's name. Default \"redirects.txt\"."
-        },
-        "noRedirectsFile": {
-          "type": "boolean",
-          "description": "NoRedirectsFile leaves out /_redirects, the copy of the rules a static host reads."
         },
         "rules": {
           "type": "array",

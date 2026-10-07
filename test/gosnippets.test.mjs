@@ -3,6 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { expand, placeholders } from "./expand.mjs";
 
 const require = createRequire(import.meta.url);
 const { packageName, hasPackageClause, headerEdits, functionSnippets, COLLAGE_IMPORT } = require("../out/src/gosnippets.js");
@@ -79,27 +80,13 @@ test("the function snippets", () => {
     assert.ok(byPrefix[prefix].imports.includes(COLLAGE_IMPORT), `${prefix} imports collage`);
   }
   assert.ok(byPrefix.cpage.body.join("\n").includes("WithLayouts("), "cpage uses WithLayouts");
-  assert.ok(byPrefix.cpage.body.join("\n").includes("layouts.Master()"), "cpage wraps the scaffold's layout");
+  assert.ok(byPrefix.cpage.body.join("\n").includes("WithLayouts(layouts.${"), "cpage wraps a layout from fragments/layouts");
   assert.ok(byPrefix.cfrag.body.join("\n").includes("NewInlineFragment("));
   assert.ok(byPrefix.cfrag.body.join("\n").includes("collage.InlineHTML"), "cfrag keeps its markup in an InlineHTML const");
   assert.deepEqual([...byPrefix.cguard.imports].sort(), ["context", "net/http", COLLAGE_IMPORT].sort());
   const fragf = byPrefix.cfragf.body.find((l) => l.startsWith("func "));
   assert.ok(fragf && fragf.includes("*collage.Fragment"), "cfragf is a function returning a fragment");
 });
-
-// expand fills every placeholder with its default, as accepting a snippet with
-// Tab does, and unescapes what the snippet syntax escapes.
-function expand(body) {
-  let text = body.join("\n");
-  for (let prev = ""; prev !== text; ) {
-    prev = text;
-    text = text
-      .replace(/\$\{\d+\|([^,|}]*)[^}]*\|\}/g, "$1")
-      .replace(/\$\{\d+:((?:[^{}\\]|\\.)*)\}/g, "$1")
-      .replace(/\$\{\d+\}|\$\d+/g, "");
-  }
-  return text.replace(/\\([}$\\])/g, "$1");
-}
 
 // The package a path is imported as: its last element, "collage-" dropped.
 const importName = (p) => p.split("/").pop().replace(/^collage-/, "").replace(/-/g, "");
@@ -151,5 +138,53 @@ test("the snippets a validated form's action is written with", () => {
   const action = byPrefix.cactf.body.join("\n");
   for (const want of ["validate.Form(rc)", "validate.Refuse(rc, v, rc.Page)", "flash.Add(", "rc.URL(", "collage.SeeOther("]) {
     assert.ok(action.includes(want), `cactf lacks ${want}`);
+  }
+});
+
+test("a placeholder's number has one default, so typing it once fills every place", () => {
+  for (const s of functionSnippets) {
+    const seen = new Map();
+    for (const p of placeholders(s.body.join("\n"))) {
+      if (seen.has(p.n)) assert.equal(p.raw, seen.get(p.n), `${s.prefix}: \${${p.n}} has two defaults`);
+      else seen.set(p.n, p.raw);
+    }
+  }
+});
+
+// The words of the application the snippets were first written for, and of the
+// usual examples: a placeholder names its role, never an example domain.
+const domainWords = /story|stories|user|login|detail|entry|recipe|article|post\b/i;
+// collage's and the plugins' own names that contain one.
+const apiWords = /http\.MethodPost|jsonld\.Article|method=\\?"post\\?"/g;
+
+test("no snippet carries an example domain", async () => {
+  const { readFileSync } = await import("node:fs");
+  for (const s of functionSnippets) {
+    const text = (s.description + "\n" + s.body.join("\n")).replace(apiWords, "");
+    assert.ok(!domainWords.test(text), `${s.prefix}: ${text.match(domainWords)?.[0]}`);
+  }
+  const html = JSON.parse(readFileSync(new URL("../snippets/html.json", import.meta.url)));
+  for (const [name, s] of Object.entries(html)) {
+    const text = (name + "\n" + s.description + "\n" + s.body.join("\n")).replace(apiWords, "");
+    assert.ok(!domainWords.test(text), `${s.prefix}: ${text.match(domainWords)?.[0]}`);
+  }
+});
+
+// Go's own template functions and keywords, beside the catalog's.
+const builtins = new Set(["and", "or", "not", "len", "index", "slice", "print", "printf", "println", "html", "js", "urlquery", "call",
+  "eq", "ne", "lt", "le", "gt", "ge", "if", "else", "end", "range", "with", "define", "template", "block", "break", "continue", "nil"]);
+
+test("every function a template snippet calls exists", async () => {
+  const { readFileSync } = await import("node:fs");
+  const catalog = new Set(JSON.parse(readFileSync(new URL("../data/catalog.json", import.meta.url))).functions.map((f) => f.name));
+  const html = JSON.parse(readFileSync(new URL("../snippets/html.json", import.meta.url)));
+  for (const s of Object.values(html)) {
+    for (const [, action] of expand(s.body).matchAll(/\{\{-?\s*((?:[^}]|\}(?!\}))*?)\s*-?\}\}/g)) {
+      if (action.startsWith("/*")) continue;
+      const code = action.replace(/"(?:[^"\\]|\\.)*"/g, '""');
+      for (const [, word] of code.matchAll(/(?:^|[\s(|])([A-Za-z_]\w*)/g)) {
+        assert.ok(catalog.has(word) || builtins.has(word), `${s.prefix}: {{${action}}} calls ${word}, which neither collage nor a plugin has`);
+      }
+    }
   }
 });

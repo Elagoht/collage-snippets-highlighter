@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.8.0
+
+- **The snippets' placeholders name what goes in them**, not an example
+  application: `${1:name}` for the name a page, fragment or action is
+  registered under, `${2:Name}` for its Go function, `${3:service}`
+  `${4:*domain.Service}` for a dependency, `slot`, `id`, `tag`, `field`,
+  `layouts.Layout()`. Before, they were one application's — stories, users, a
+  login, an entry area — in the Go snippets and in `curlp`, `crangelink`,
+  `cformv`, `caform`, `cfield` and `cfieldt`. A name typed once still fills
+  every place the snippet repeats it.
+- **The Go snippets follow collage v0.49.0 and v0.50.0.** A fragment's data is
+  `WithData(collage.Load(…))`, and `cfragd`'s handler factory returns
+  `collage.Data` (`WithDataHandler` and `DataHandlerFunc` are gone). `cstate`
+  declares a typed `collage.Key`, read and written with `Get` and `Set`;
+  `ccached` and `conce` take a key. `cplugin` reads its options with
+  `collage.PluginConfig(host, defaults)`.
+- Every Go snippet is now compiled in the tests: `go vet` against collage v0.50.0
+  and collage-validate, -flash, -meta and -jsonld, every choice tried. The
+  template snippets are checked to call only functions collage or a plugin has.
+- plugins-config.json: the schema knows fail2ban. The generator finds a plugin's
+  options through `collage.PluginConfig` as well as `host.Config`; without it,
+  plugins on collage v0.50.0 would have lost their schema.
+
 ## 0.7.0
 
 - **Learning the project no longer fills the Go build cache.** It ran

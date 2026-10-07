@@ -68,9 +68,9 @@
   },
   "collage page URL with a parameter": {
     "prefix": "curlp",
-    "description": "collage: a page's URL by name, its {parameter} filled — a story by its id",
+    "description": "collage: a page's URL by name, its {parameter} filled",
     "body": [
-      "{{pageURL \"${1:story}\" \"${2:id}\" .${3:ID}}}"
+      "{{pageURL \"${1:name}\" \"${2:id}\" .${3:ID}}}"
     ]
   },
   "collage fragment URL": {
@@ -194,8 +194,8 @@
     "prefix": "cfield",
     "description": "collage-validate: an input that shows its error and keeps what was typed",
     "body": [
-      "<label for=\"${1:email}\">${2:Email}</label>",
-      "<input id=\"$1\" name=\"$1\" type=\"${3:email}\" value=\"{{fieldValue \"$1\"}}\"{{with fieldError \"$1\"}} aria-invalid=\"true\" aria-describedby=\"$1-error\"{{end}}>",
+      "<label for=\"${1:field}\">${2:Label}</label>",
+      "<input id=\"$1\" name=\"$1\" type=\"${3:text}\" value=\"{{fieldValue \"$1\"}}\"{{with fieldError \"$1\"}} aria-invalid=\"true\" aria-describedby=\"$1-error\"{{end}}>",
       "{{with fieldError \"$1\"}}<p id=\"$1-error\" class=\"field-error\">{{.}}</p>{{end}}"
     ]
   },
@@ -248,10 +248,10 @@
     "prefix": "cformv",
     "description": "A form collage-validate checks: a field with its value and message, the form's own message, the forgery token and a honeypot",
     "body": [
-      "<form method=\"post\" action=\"{{pageURL \"${1:login}\"}}\">",
+      "<form method=\"post\" action=\"{{pageURL \"${1:name}\"}}\">",
       "  <label>",
-      "    ${2:Email}",
-      "    <input name=\"${3:email}\" type=\"${4:email}\" value=\"{{fieldValue \"$3\"}}\" required>",
+      "    ${2:Label}",
+      "    <input name=\"${3:field}\" type=\"${4:text}\" value=\"{{fieldValue \"$3\"}}\" required>",
       "  </label>",
       "  {{with fieldError \"$3\"}}<small class=\"field-error\">{{.}}</small>{{end}}",
       "  $0",
@@ -266,7 +266,7 @@
     "prefix": "cfieldt",
     "description": "collage-validate: a textarea with the submitted value and its message",
     "body": [
-      "<label for=\"${1:body}\">${2:Text}</label>",
+      "<label for=\"${1:field}\">${2:Label}</label>",
       "<textarea id=\"$1\" name=\"$1\"${3: maxlength=\"140\"}{{with fieldError \"$1\"}} aria-invalid=\"true\" aria-describedby=\"$1-error\"{{end}}>{{fieldValue \"$1\"}}</textarea>",
       "{{with fieldError \"$1\"}}<p id=\"$1-error\" class=\"field-error\">{{.}}</p>{{end}}"
     ]
@@ -282,9 +282,9 @@
     "prefix": "caform",
     "description": "A form posting to an action at a URL of its own, by the action's name",
     "body": [
-      "<form method=\"post\" action=\"{{actionURL \"${1:logout}\"}}\">",
+      "<form method=\"post\" action=\"{{actionURL \"${1:name}\"}}\">",
       "  {{csrfToken}}",
-      "  <button type=\"submit\">${2:Log out}</button>",
+      "  <button type=\"submit\">${2:Send}</button>",
       "</form>"
     ]
   },
@@ -299,8 +299,8 @@
     "prefix": "crangelink",
     "description": "A list of links to a page with a parameter, and what shows when there is nothing",
     "body": [
-      "{{range .${1:Stories}}}",
-      "  <a href=\"{{pageURL \"${2:story}\" \"${3:id}\" .${4:ID}}}\">{{.${5:Title}}}</a>",
+      "{{range .${1:Items}}}",
+      "  <a href=\"{{pageURL \"${2:name}\" \"${3:id}\" .${4:ID}}}\">{{.${5:Title}}}</a>",
       "{{else}}",
       "  <p>${6:Nothing yet.}</p>",
       "{{end}}"

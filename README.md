@@ -38,14 +38,16 @@ and `collage add` writes — `pages/<area>/` builds a page, `fragments/pages/<ar
 its content, `fragments/layouts/` the layouts, `actions/<area>.go` the actions and
 `actions/funcs/<area>.go` their handlers. Exported functions come with a one-line
 comment, a signature of several parameters takes a line for each, and data is a
-typed view, never `any`.
+typed view, never `any`. Placeholders name what goes in them — `name`, `Name`,
+`service`, `*domain.Service`, `slot`, `id` — and one typed once fills every place
+the snippet repeats it.
 
 | Prefix | |
 | --- | --- |
 | `cpage`, `cpagea`, `cpagep`, `cpage404` | a page; with its form's action (`WithActionFor`); at a path with a `{parameter}`; the not-found page |
 | `cfrag` | a page's content: an inline template, its view struct, a typed `collage.Load` handler |
 | `cfragf`, `cfragd`, `cfrags`, `cfrag404` | a fragment with a template file; whose handler takes a service; with a slot filled per render; the not-found content |
-| `chtml`, `cload`, `cstate` | a `collage.InlineHTML` constant; a typed data handler; a typed value shared within a render |
+| `chtml`, `cload`, `cstate` | a `collage.InlineHTML` constant; a typed data handler for `WithData`; a `collage.Key` for a value shared within a render |
 | `clayout`, `clayoutg` | a layout; a layout with a guard |
 | `cguard` | a guard: `nil` lets the request through, a decision redirects |
 | `cact`, `cactp` | an action builder: attached to its page; at a URL of its own |
@@ -57,7 +59,7 @@ typed view, never `any`.
 | `cdoc`, `cdocs` | a document rendered by a handler; one with a fixed body at the site's root |
 | `cservice`, `cerrs` | `data/<domain>`: a service; its errors and the form field each is shown beside |
 | `creg` | `routes.go`'s `register`: one `app.Register` call and the not-found page |
-| `ccached`, `conce`, `cinval` | `collage.Cached`; `collage.Once`; an action's `InvalidateTags` |
+| `ccached`, `conce`, `cinval` | `collage.Cached` and `collage.Once`, under a `collage.Key`; an action's `InvalidateTags` |
 | `cmw` | middleware with `app.Use` |
 | `ctest`, `ctestf` | collagetest: a page renders; a form submitted with its token, and where it redirects |
 | `cplugin`, `chook` | a plugin skeleton; its AfterRender or BeforeRender hook |
@@ -101,7 +103,7 @@ CSS's. So is the string of a constant or variable declared as
 `collage.InlineHTML` (collage v0.30.0), which holds a template apart from its call:
 
 ```go
-const loginForm collage.InlineHTML = `
+const formBlock collage.InlineHTML = `
   <form method="post">{{csrfToken}}</form>`
 ```
 
@@ -231,7 +233,8 @@ quietly fall behind.
 
 ```sh
 npm install
-npm test            # builds the grammar, compiles, and runs the grammar and catalog tests
+npm test            # builds the grammar, compiles, and runs the grammar and catalog tests,
+                    # and go vet on every Go snippet against test/compile/go.mod's collage
 npm run test:integration  # runs the extension in a VS Code of its own and checks completion and hover
 npm run schema      # regenerates schemas/plugins-config.schema.json from ~/Desktop/collage-*
                     # (-manifests also writes each plugin repo's collage.json)
@@ -240,4 +243,5 @@ code --install-extension collage-snippets-highlighter-0.2.0.vsix
 ```
 
 The catalog tests read the collage and plugin sources from `~/Desktop` (or
-`COLLAGE_SRC`) and skip when they are not there.
+`COLLAGE_SRC`) and skip when they are not there. The snippet check needs `go`,
+and the network once, to fill the module cache; it skips without `go`.

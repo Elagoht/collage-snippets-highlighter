@@ -16,7 +16,7 @@
         },
         "skip": {
           "type": "array",
-          "description": "Skip are path prefixes never logged. Default [\"/_collage/\", \"/healthz\"]: collage's development endpoints, and the health check a load balancer polls every few seconds. An empty list in configuration logs everything.",
+          "description": "Skip are path prefixes never logged. Default [\"/_collage/\", \"/healthz\", \"/readyz\"]: collage's development endpoints, and the liveness and readiness checks a load balancer or kubelet polls every few seconds (elagoht/health's paths). An empty list in configuration logs everything.",
           "items": {
             "type": "string"
           }
@@ -834,6 +834,25 @@
         }
       },
       "markdownDescription": "A collage plugin that tells search engines which URLs changed, through the IndexNow protocol: Bing, Yandex, Seznam, Naver and the others that share what one of them is told.\n\n[collage-indexnow](https://github.com/Elagoht/collage-indexnow)",
+      "additionalProperties": false
+    },
+    "elagoht/jobs": {
+      "type": "object",
+      "description": "Package jobs runs scheduled jobs and typed background queues, only while the application serves, and finishes queued work on shutdown.",
+      "properties": {
+        "disabled": {
+          "type": "array",
+          "description": "names of scheduled jobs that do not run; an unknown name fails startup",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timezone": {
+          "type": "string",
+          "description": "IANA time zone cron expressions are read in, default \"UTC\""
+        }
+      },
+      "markdownDescription": "Package jobs runs scheduled jobs and typed background queues, only while the application serves, and finishes queued work on shutdown.\n\n[collage-jobs](https://github.com/Elagoht/collage-jobs)",
       "additionalProperties": false
     },
     "elagoht/jsonld": {

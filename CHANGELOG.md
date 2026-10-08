@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0
+
+- **`plugins-config.json` knows `elagoht/jobs`** (collage-jobs v0.1.0):
+  `timezone`, the IANA zone cron expressions are read in, and `disabled`, the
+  names of scheduled jobs that do not run, complete and are checked.
+- **collage-accesslog's `skip` description** now names `/readyz` as well, from
+  the plugin's latest release.
+- Schema regenerated from the latest release of every plugin, against collage
+  v0.55.0. No template functions were added in collage v0.55.0 or by any
+  plugin, so the catalog is unchanged. The extension ships no `main.go`
+  snippet, so v0.55.0's `app.Shutdown` after a build or a command needs no
+  snippet change.
+
 ## 0.11.0
 
 - **`plugins-config.json` knows `elagoht/health`** (collage-health v0.1.0):

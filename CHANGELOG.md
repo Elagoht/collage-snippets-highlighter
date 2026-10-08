@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.14.0
+
+- **`plugins-config.json` knows `elagoht/uploads`** (collage-uploads v0.1.0):
+  `dir`, the directory of the disk store, used when the plugin is built
+  without a store; the default is `var/uploads`.
+- Schema regenerated from the latest release of every plugin, against collage
+  v0.57.0 (and collage-honeypot v0.4.3); nothing else in it changed. No
+  template functions were added in collage v0.57.0 or by any plugin, so the
+  catalog is unchanged. v0.57.0's `WithStreamingBody` and `WithBodyTimeout` are
+  Go builder methods on an action; the extension ships only template snippets,
+  so none needed a change.
+
 ## 0.13.0
 
 - **`plugins-config.json` knows three new options** from today's plugin

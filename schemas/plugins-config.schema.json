@@ -1785,6 +1785,18 @@
       "markdownDescription": "A collage plugin that gives a page's headings ids, and puts a table of contents and a reading time where the templates ask for them.\n\n[collage-toc](https://github.com/Elagoht/collage-toc)",
       "additionalProperties": false
     },
+    "elagoht/uploads": {
+      "type": "object",
+      "description": "A collage plugin that receives file uploads, validates them by their content, stores them under random keys, and serves them back safely.",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "directory of the disk store, used when the plugin is built without a store; default \"var/uploads\""
+        }
+      },
+      "markdownDescription": "A collage plugin that receives file uploads, validates them by their content, stores them under random keys, and serves them back safely.\n\n[collage-uploads](https://github.com/Elagoht/collage-uploads)",
+      "additionalProperties": false
+    },
     "elagoht/validate": {
       "type": "object",
       "description": "A collage plugin for validating a form an action receives.",

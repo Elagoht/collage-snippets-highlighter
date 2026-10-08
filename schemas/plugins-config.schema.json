@@ -6,6 +6,10 @@
       "type": "object",
       "description": "A collage plugin that writes one log line per request.",
       "properties": {
+        "fullReferer": {
+          "type": "boolean",
+          "description": "FullReferer logs the Referer header exactly as it came. Without it a referer is logged as its scheme, host and path only — no query, fragment or user info, where a reset token or a session id travels — and one that does not parse as a URL is logged empty."
+        },
         "requestIdHeader": {
           "type": "string",
           "description": "RequestIDHeader is the header a request id is read from and sent back in. Default \"X-Request-ID\"."
@@ -335,6 +339,10 @@
         "noPrecompress": {
           "type": "boolean",
           "description": "NoPrecompress stops a static build from writing .br and .gz files."
+        },
+        "skipPrivate": {
+          "type": "boolean",
+          "description": "SkipPrivate sends a response whose Cache-Control carries private or no-store uncompressed. Such a response is usually one reader's — a CSRF token, a session's data — and compressing a secret beside input an attacker controls lets them read it from the compressed length (BREACH). Default false. A static build's .br and .gz files are not affected."
         },
         "types": {
           "type": "array",
@@ -1277,6 +1285,23 @@
         "noDiskCache": {
           "type": "boolean",
           "description": "NoDiskCache keeps produced images in memory only, so nothing is written anywhere. A read-only deployment does not need this — a directory that cannot be created or written to disables the disk cache by itself, with one line in the log — but a deployment that would rather not write at all can say so."
+        },
+        "originMaxAge": {
+          "description": "OriginMaxAge is how long a browser or CDN may keep an image fetched from an origin before asking again: its Cache-Control is \"public, max-age=\" this, in seconds, and never immutable. Defaults to 24h; at least 1s. An origin's image is named by its recipe — URL, size, format — not by its content, so the origin can change it under the same name, and a mistake fixed there reaches readers within this time. Images of the site's own Files have their content in their name and are served for a year, immutable. Written like FetchTimeout: \"24h\", \"30m\", or nanoseconds.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+              "examples": [
+                "30s",
+                "5m"
+              ]
+            },
+            {
+              "type": "integer",
+              "description": "nanoseconds"
+            }
+          ]
         },
         "prefix": {
           "type": "string",

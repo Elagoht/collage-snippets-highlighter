@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.13.0
+
+- **`plugins-config.json` knows three new options** from today's plugin
+  releases: `elagoht/accesslog`'s `fullReferer` (collage-accesslog v0.1.11),
+  `elagoht/compress`'s `skipPrivate` (collage-compress v0.1.8) and
+  `elagoht/opti-image`'s `originMaxAge` (collage-opti-image v0.3.5), a duration
+  that takes `"24h"` or a number of nanoseconds like `fetchTimeout`.
+- Schema regenerated from the latest release of every plugin, against collage
+  v0.56.0. No template functions were added in collage v0.56.0 or by any
+  plugin, so the catalog is unchanged. v0.56.0 refuses an action that declares
+  `OPTIONS`, `TRACE` or `CONNECT`; no snippet declares an action method, so
+  none needed a change.
+
 ## 0.12.0
 
 - **`plugins-config.json` knows `elagoht/jobs`** (collage-jobs v0.1.0):

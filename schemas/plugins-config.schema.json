@@ -478,8 +478,14 @@
     },
     "elagoht/devtoolbar": {
       "type": "object",
-      "description": "A collage plugin that shows a small panel at the bottom of every page in development. It takes no configuration from JSON: it is configured in Go.",
-      "markdownDescription": "A collage plugin that shows a small panel at the bottom of every page in development.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)\n\nIt takes no configuration from JSON: it is configured in Go.",
+      "description": "A collage plugin that shows a small panel at the bottom of every page in development.",
+      "properties": {
+        "allowRemote": {
+          "type": "boolean",
+          "description": "AllowRemote shows the panel to every client. By default only a client on the developer's machine or a private network sees it (loopback, RFC 1918, IPv6 unique-local and link-local addresses, as collage.ClientIP names the client): a request from anywhere else means development mode is serving the public, and its responses go out untouched."
+        }
+      },
+      "markdownDescription": "A collage plugin that shows a small panel at the bottom of every page in development.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)",
       "additionalProperties": false
     },
     "elagoht/errortrack": {

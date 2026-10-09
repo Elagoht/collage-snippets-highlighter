@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.0
+
+- **`plugins-config.json` knows `elagoht/devtoolbar`'s `allowRemote`**
+  (collage-devtoolbar v0.3.0). The panel is drawn only for clients on the
+  developer's machine or a private network; `allowRemote` shows it to every
+  client.
+
 ## 0.15.0
 
 - **`plugins-config.json` knows `elagoht/consent`** (collage-consent v0.1.2):

@@ -50,6 +50,8 @@
     { "name": "data-collage-push", "value": null, "doc": "collage-live: take the fragment from the stream when the server pushes it.", "repo": "collage-live" },
     { "name": "data-collage-swap", "value": "${1|morph,replace|}", "doc": "collage-live: `morph` patches the DOM in place, so a focused input keeps what is typed.", "repo": "collage-live" },
     { "name": "data-collage-transition", "value": null, "doc": "collage-live: put each answer in inside a view transition, unless the reader prefers reduced motion.", "repo": "collage-live" },
-    { "name": "data-collage-target", "value": "#${1:result}", "doc": "collage-live: on a form, submit with fetch and put the answer into this element.", "repo": "collage-live" }
+    { "name": "data-collage-target", "value": "#${1:result}", "doc": "collage-live: on a form, submit with fetch and put the answer into this element.", "repo": "collage-live" },
+    { "name": "data-consent", "value": "${1:analytics}", "doc": "collage-consent: holds this element back until the category is granted — a `<script type=\"text/plain\">` runs, an `<iframe data-src>` gets its `src`.", "repo": "collage-consent" },
+    { "name": "data-consent-open", "value": null, "doc": "collage-consent: a click on this element reopens the consent banner.", "repo": "collage-consent" }
   ]
 }

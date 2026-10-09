@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.0
+
+- **`plugins-config.json` knows `elagoht/consent`** (collage-consent v0.1.2):
+  version, categories, text per locale, policyURL, maxAgeDays and serverPaths.
+- **elagoht/analytics' `consentCategory`** (collage-analytics v0.2.0) is in the
+  schema.
+- **HTML completion offers `data-consent`** (a category, on a gated `<script
+  type="text/plain">` or an `<iframe data-src>`) **and `data-consent-open`**
+  (a click reopens the consent banner).
+- Schema regenerated from the latest release of every plugin (44).
+
 ## 0.14.0
 
 - **`plugins-config.json` knows `elagoht/uploads`** (collage-uploads v0.1.0):

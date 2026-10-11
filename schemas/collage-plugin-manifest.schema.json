@@ -11,6 +11,21 @@
     "name": { "type": "string", "description": "The plugin's Name(): the key its configuration is found under in plugins-config.json.", "pattern": "^[^\\s]+$" },
     "description": { "type": "string", "description": "What the plugin does, in a sentence." },
     "repository": { "type": "string", "description": "Where the plugin's documentation lives.", "format": "uri" },
+    "requires": {
+      "type": "array",
+      "description": "The plugins that must also be in the application, by name. `collage plugin add` adds each one first, and `collage plugin del` refuses to remove one another plugin requires.",
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+      "uniqueItems": true
+    },
+    "order": {
+      "type": "integer",
+      "description": "Where `collage plugin add` places the plugin in Config.Plugins: lower values sit earlier, which is outermost as middleware. Default 0.",
+      "default": 0
+    },
+    "setup": {
+      "type": "string",
+      "description": "A short Markdown note `collage plugin add` prints after it adds the plugin, for what only Go can supply."
+    },
     "templateFunctions": {
       "type": "array",
       "description": "The template functions the plugin adds with AddTemplateFunc or AddRenderFunc.",

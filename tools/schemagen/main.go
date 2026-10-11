@@ -450,15 +450,38 @@ type manifest struct {
 	Name              string             `json:"name"`
 	Description       string             `json:"description,omitempty"`
 	Repository        string             `json:"repository"`
+	Requires          []string           `json:"requires,omitempty"`
+	Order             *int               `json:"order,omitempty"`
+	Setup             string             `json:"setup,omitempty"`
 	TemplateFunctions []manifestFunc     `json:"templateFunctions,omitempty"`
 	Attributes        []manifestAttr     `json:"attributes,omitempty"`
 	Snippets          map[string]snippet `json:"snippets,omitempty"`
 	Config            *schema            `json:"config,omitempty"`
 }
 
+// handWritten are the manifest fields written by hand in each plugin repo,
+// which nothing here can generate: a regenerated manifest keeps them.
+type handWritten struct {
+	Requires []string `json:"requires"`
+	Order    *int     `json:"order"`
+	Setup    string   `json:"setup"`
+}
+
+// readHandWritten reads the hand-written fields of dir/collage.json, or none
+// when there is no manifest yet.
+func readHandWritten(dir string) (handWritten, error) {
+	var h handWritten
+	err := readJSON(filepath.Join(dir, "collage.json"), &h)
+	if errors.Is(err, os.ErrNotExist) {
+		return handWritten{}, nil
+	}
+	return h, err
+}
+
 // writeManifest writes dir/collage.json: the plugin's template functions and
 // attributes from the catalog, its template snippets — those whose name begins
-// with its repository's — and its configuration's schema.
+// with its repository's — and its configuration's schema. requires, order and
+// setup are kept from the existing file.
 func writeManifest(dir string, p *pkg, config *schema, catalogPath, snippetsPath string) error {
 	var cat catalogFile
 	if err := readJSON(catalogPath, &cat); err != nil {
@@ -468,11 +491,18 @@ func writeManifest(dir string, p *pkg, config *schema, catalogPath, snippetsPath
 	if err := readJSON(snippetsPath, &snippets); err != nil {
 		return err
 	}
+	kept, err := readHandWritten(dir)
+	if err != nil {
+		return fmt.Errorf("%s: %w", filepath.Join(dir, "collage.json"), err)
+	}
 	m := manifest{
 		Schema:      "https://raw.githubusercontent.com/Elagoht/collage-snippets-highlighter/main/schemas/collage-plugin-manifest.schema.json",
 		Name:        p.name,
 		Description: p.doc,
 		Repository:  "https://github.com/Elagoht/" + p.repo,
+		Requires:    kept.Requires,
+		Order:       kept.Order,
+		Setup:       kept.Setup,
 	}
 	for _, f := range cat.Functions {
 		if f.Repo == p.repo {

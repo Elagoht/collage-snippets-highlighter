@@ -133,3 +133,97 @@ type Options struct {
 		t.Errorf("properties = %v, want none", s.Properties)
 	}
 }
+
+// requires, order and setup are written by hand in each plugin repo: a
+// regenerated manifest keeps them.
+func TestRegeneratingAManifestKeepsRequiresOrderAndSetup(t *testing.T) {
+	p, err := plugin(t, "elagoht/websocket", `
+type Config struct {
+	Path string `+"`json:\"path\"`"+`
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(t.TempDir(), "collage-websocket")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := `{
+  "name": "elagoht/websocket",
+  "requires": ["elagoht/live"],
+  "order": -1,
+  "setup": "Give it to ` + "`websocket.New(nil)`" + ` in <plugins.go>.",
+  "description": "stale"
+}
+`
+	if err := os.WriteFile(filepath.Join(dir, "collage.json"), []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	catalog := filepath.Join(t.TempDir(), "catalog.json")
+	snippets := filepath.Join(t.TempDir(), "html.json")
+	if err := os.WriteFile(catalog, []byte(`{"functions":[],"attributes":[]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(snippets, []byte(`{}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeManifest(dir, p, p.schema(), catalog, snippets); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(filepath.Join(dir, "collage.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		Name        string   `json:"name"`
+		Requires    []string `json:"requires"`
+		Order       *int     `json:"order"`
+		Setup       string   `json:"setup"`
+		Description string   `json:"description"`
+	}
+	if err := json.Unmarshal(body, &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Requires) != 1 || got.Requires[0] != "elagoht/live" {
+		t.Errorf("requires = %v, want [elagoht/live]", got.Requires)
+	}
+	if got.Order == nil || *got.Order != -1 {
+		t.Errorf("order = %v, want -1", got.Order)
+	}
+	if want := "Give it to `websocket.New(nil)` in <plugins.go>."; got.Setup != want {
+		t.Errorf("setup = %q, want %q", got.Setup, want)
+	}
+	if got.Description == "stale" {
+		t.Errorf("description was kept; the rest is regenerated")
+	}
+}
+
+// A manifest without them, or no manifest yet, gains none.
+func TestANewManifestHasNoRequiresOrderOrSetup(t *testing.T) {
+	p, err := plugin(t, "elagoht/plain", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	catalog := filepath.Join(t.TempDir(), "catalog.json")
+	snippets := filepath.Join(t.TempDir(), "html.json")
+	if err := os.WriteFile(catalog, []byte(`{"functions":[],"attributes":[]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(snippets, []byte(`{}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeManifest(dir, p, p.schema(), catalog, snippets); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(filepath.Join(dir, "collage.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{`"requires"`, `"order"`, `"setup"`} {
+		if strings.Contains(string(body), key) {
+			t.Errorf("collage.json has %s:\n%s", key, body)
+		}
+	}
+}

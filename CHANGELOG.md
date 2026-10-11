@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0
+
+- **The plugin manifest schema knows `requires`, `order` and `setup`**, the
+  fields `collage plugin add` reads (collage v0.58.0): the plugins a plugin
+  needs, where it sits in `Config.Plugins`, and a note printed after it is added.
+- `schemagen -manifests` keeps those three fields when it rewrites a plugin's
+  `collage.json`, since they are written by hand.
+
 ## 0.16.0
 
 - **`plugins-config.json` knows `elagoht/devtoolbar`'s `allowRemote`**

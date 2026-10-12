@@ -227,3 +227,20 @@ func TestANewManifestHasNoRequiresOrderOrSetup(t *testing.T) {
 		}
 	}
 }
+
+// collage.Duration (collage v0.61.0) is a string only: a number is refused when
+// the plugin decodes it, so the schema must not offer one.
+func TestCollageDurationIsAString(t *testing.T) {
+	p, err := plugin(t, "elagoht/fail2ban", `
+type Options struct {
+	BanTime collage.Duration `+"`json:\"banTime\"`"+`
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := property(t, p, "banTime")
+	if !strings.Contains(got, `"type":"string"`) || !strings.Contains(got, `"pattern"`) || strings.Contains(got, "integer") {
+		t.Errorf("banTime = %s, want a duration string and no number", got)
+	}
+}

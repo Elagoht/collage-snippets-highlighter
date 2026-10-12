@@ -368,6 +368,10 @@ func (p *pkg) typeSchema(expr ast.Expr, depth int) *schema {
 		if x, ok := t.X.(*ast.Ident); ok && x.Name == "time" && t.Sel.Name == "Duration" {
 			return &schema{Type: "integer", Description: "nanoseconds"}
 		}
+		// collage.Duration (collage v0.61.0) is written as a string and refuses a number.
+		if x, ok := t.X.(*ast.Ident); ok && x.Name == "collage" && t.Sel.Name == "Duration" {
+			return &schema{Type: "string", Pattern: durationPattern, Examples: []string{"30s", "5m"}}
+		}
 		return &schema{}
 	case *ast.StructType:
 		obj := &schema{Type: "object", Properties: map[string]*schema{}, Closed: true}

@@ -165,7 +165,7 @@ function file(path, pkg, prefix, imports, text) {
 
 const topLevel = (body) => /^(\/\/[^\n]*\n)*(func|const|type|var) /.test(body);
 
-test("every Go snippet compiles against collage v0.50.0 and its plugins", { skip: !haveGo && "go is not installed", timeout: 600_000 }, () => {
+test("every Go snippet compiles against collage v0.60.0 and its plugins", { skip: !haveGo && "go is not installed", timeout: 600_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), "collage-snippets-"));
   try {
     copyFileSync(new URL("./compile/go.mod", import.meta.url), join(root, "go.mod"));

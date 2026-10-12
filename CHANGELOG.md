@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.18.0
+
+- **Snippets follow collage v0.60.0's sealed API.** The JSON action snippet
+  (`cactj`) answers with `collage.JSON(status, value)`, the name `JSONOf` had
+  until v0.60.0; the slot resolver snippet (`cfrags`) takes the render's
+  context first, as `SlotResolverFunc` now does. The snippets compile against
+  collage v0.60.0.
+
 ## 0.17.0
 
 - **The plugin manifest schema knows `requires`, `order` and `setup`**, the

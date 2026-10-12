@@ -13,7 +13,7 @@ test("the parent of a binding: the builder chain read back to its constructor", 
 	return collage.NewFragment("post", "pages/post.html").
 		WithData(collage.Load(loadPost)).
 		WithSlotFragment("comments", CommentList()).
-		WithSlotResolver("cards", func(rc *collage.RenderContext) ([]*collage.Fragment, error) { return nil, nil }).
+		WithSlotResolver("cards", func(ctx context.Context, rc *collage.RenderContext) ([]*collage.Fragment, error) { return nil, nil }).
 		Build()
 }`;
   const b = slotBindings(go);

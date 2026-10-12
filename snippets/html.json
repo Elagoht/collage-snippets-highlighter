@@ -312,7 +312,7 @@
     "body": [
       "<div class=\"flash-stack\" aria-live=\"polite\">",
       "  {{range flashes}}",
-      "  <div class=\"flash flash-{{.Kind}}\" role=\"status\">{{.Text}}</div>",
+      "  <div class=\"flash flash--{{.Kind}}\" role=\"status\">{{.Text}}</div>",
       "  {{end}}",
       "</div>",
       "<script nonce=\"{{cspNonce}}\">",

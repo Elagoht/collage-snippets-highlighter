@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.19.0
+
+- **`plugins-config.json` follows the plugins' v1 conventions** (the sealing
+  pass, against collage v0.61.2). Regenerated from every plugin's new release
+  (44 read a configuration); a key a plugin dropped or renamed is now flagged:
+  - Secrets are named by an environment variable: `keyEnv` (flash, honeypot,
+    oauth, secure, session), `previousKeysEnv` (oauth, session), `tokenEnv`
+    (prometheus, cdnpurge's `webhook`), `apiTokenEnv` (cdnpurge's `cloudflare`).
+  - No plugin takes `baseURL` (cdnpurge, indexnow, meta, sitemap) or `siteURL`
+    (jsonld): the origin is the application's `Config.BaseURL`. accesslog's and
+    ratelimit's `trustProxy`/`trustedProxies` are gone too, for collage's
+    `Server.TrustedProxies`.
+  - Durations are `collage.Duration` strings (`"5s"`); a number is refused:
+    cdnpurge, errortrack, fail2ban, flash, health, honeypot, ogimage,
+    opti-image, session, tenant.
+  - Renamed: accesslog `requestIDHeader`; analytics `goatCounter`,
+    `measurementID`, `websiteID`, `respectDNT`; favicon `startURL`; highlight
+    `noAuto`; minimizer `noCSS`/`noHTML`/`noJSON`; toc `noIDs`; offline
+    `inDevelopment`, `buildID`; cdnpurge `inDevelopment`; indexnow `skip`;
+    secure `contentTypeOptions`. Removed: htmlcheck `inProduction`.
+  - New: bundle's `minify`/`sourcemap` take `"always"`/`"never"`; consent's
+    `text` is the default locale's and `locales` holds the others; search's and
+    toc's wording is under `text`; compress `noCache`, indexnow `backoff`,
+    uploads `cacheControl`, websocket `originPatterns`.
+- `schemagen` has no entries left for plugin `Duration` types, which the
+  plugins replaced with `collage.Duration`; its test fixtures use `New(Options{})`.
+- The Go snippets compile against collage v0.61.2 and collage-flash v0.2.0,
+  collage-jsonld v0.3.0, collage-meta v0.3.0 and collage-validate v0.2.0; none
+  needed a change. The flash snippets' class is `flash--<kind>` in both.
+  No template function or attribute changed, so the catalog is unchanged.
+
 ## 0.18.0
 
 - **Snippets follow collage v0.60.0's sealed API.** The JSON action snippet

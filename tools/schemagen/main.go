@@ -94,25 +94,6 @@ var decoders = map[string]func() *schema{
 	"elagoht/opti-image.WebPMode": func() *schema {
 		return &schema{AnyOf: []*schema{{Type: "boolean"}, {Type: "string", Enum: []string{"auto"}}}}
 	},
-	"elagoht/opti-image.Duration": durationOrNanoseconds,
-	"elagoht/cdnpurge.Duration":   durationOrNanoseconds,
-	"elagoht/ogimage.Duration":    durationOrNanoseconds,
-	"elagoht/tenant.Duration":     durationOrNanoseconds,
-	"elagoht/errortrack.Duration": durationOrNanoseconds,
-	"elagoht/fail2ban.Duration":   durationOrNanoseconds,
-	"elagoht/health.Duration":     durationOrNanoseconds,
-	"elagoht/live.Duration": func() *schema {
-		return &schema{Type: "string", Pattern: durationPattern, Examples: []string{"30s", "5m"}}
-	},
-}
-
-// durationOrNanoseconds is a duration written as Go writes one, "10s", or a
-// number of nanoseconds.
-func durationOrNanoseconds() *schema {
-	return &schema{AnyOf: []*schema{
-		{Type: "string", Pattern: durationPattern, Examples: []string{"30s", "5m"}},
-		{Type: "integer", Description: "nanoseconds"},
-	}}
 }
 
 func main() {

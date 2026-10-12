@@ -45,17 +45,15 @@ func property(t *testing.T, p *pkg, key string) string {
 
 // A type that decodes itself takes whatever its UnmarshalJSON reads, which its
 // underlying Go type does not say: opti-image's WebPMode is a uint8 read from
-// true, false or "auto".
+// true, false or "auto". A collage.Duration is a duration string.
 func TestATypeThatDecodesItselfIsDescribedByItsDecoder(t *testing.T) {
 	p, err := plugin(t, "elagoht/opti-image", `
-type Config struct {
+type Options struct {
 	WebP WebPMode `+"`json:\"webp\"`"+`
-	FetchTimeout Duration `+"`json:\"fetchTimeout\"`"+`
+	FetchTimeout collage.Duration `+"`json:\"fetchTimeout\"`"+`
 }
 type WebPMode uint8
 func (m *WebPMode) UnmarshalJSON(data []byte) error { return nil }
-type Duration int64
-func (d *Duration) UnmarshalJSON(data []byte) error { return nil }
 `)
 	if err != nil {
 		t.Fatal(err)
@@ -63,8 +61,9 @@ func (d *Duration) UnmarshalJSON(data []byte) error { return nil }
 	if got := property(t, p, "webp"); !strings.Contains(got, `"anyOf":[{"type":"boolean"},{"type":"string","enum":["auto"]}]`) {
 		t.Errorf("webp = %s, want true, false or \"auto\"", got)
 	}
-	if got := property(t, p, "fetchTimeout"); !strings.Contains(got, `"anyOf":[{"type":"string"`) || !strings.Contains(got, `{"type":"integer"`) {
-		t.Errorf("fetchTimeout = %s, want a duration string or nanoseconds", got)
+	// collage.Duration (collage v0.61.0) is a duration string and refuses a number.
+	if got := property(t, p, "fetchTimeout"); !strings.Contains(got, `"type":"string"`) || strings.Contains(got, `"integer"`) {
+		t.Errorf("fetchTimeout = %s, want a duration string only", got)
 	}
 }
 
@@ -138,7 +137,7 @@ type Options struct {
 // regenerated manifest keeps them.
 func TestRegeneratingAManifestKeepsRequiresOrderAndSetup(t *testing.T) {
 	p, err := plugin(t, "elagoht/websocket", `
-type Config struct {
+type Options struct {
 	Path string `+"`json:\"path\"`"+`
 }
 `)
@@ -153,7 +152,7 @@ type Config struct {
   "name": "elagoht/websocket",
   "requires": ["elagoht/live"],
   "order": -1,
-  "setup": "Give it to ` + "`websocket.New(nil)`" + ` in <plugins.go>.",
+  "setup": "Give it to ` + "`websocket.New(websocket.Options{})`" + ` in <plugins.go>.",
   "description": "stale"
 }
 `
@@ -191,7 +190,7 @@ type Config struct {
 	if got.Order == nil || *got.Order != -1 {
 		t.Errorf("order = %v, want -1", got.Order)
 	}
-	if want := "Give it to `websocket.New(nil)` in <plugins.go>."; got.Setup != want {
+	if want := "Give it to `websocket.New(websocket.Options{})` in <plugins.go>."; got.Setup != want {
 		t.Errorf("setup = %q, want %q", got.Setup, want)
 	}
 	if got.Description == "stale" {

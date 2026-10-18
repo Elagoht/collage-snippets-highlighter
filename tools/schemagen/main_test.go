@@ -22,7 +22,7 @@ func pluginReading(t *testing.T, name, configure, body string) (*pkg, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	src := "package p\n\nconst Name = \"" + name + "\"\n\n" +
+	src := "package p\n\nconst Name = \"" + name + "\"\n\nfunc (p *Plugin) Name() string { return Name }\n\n" +
 		configure + "\n\n" + body
 	if err := os.WriteFile(filepath.Join(dir, "p.go"), []byte(src), 0o644); err != nil {
 		t.Fatal(err)
@@ -115,6 +115,26 @@ type Config struct {
 	}
 	if got := property(t, p, "name"); !strings.Contains(got, `"type":"string"`) {
 		t.Errorf("name = %s, want a string", got)
+	}
+}
+
+// A library naming itself with a Name constant but serving no Plugin, as
+// collage-redis does, has no key in plugins-config.json.
+func TestALibraryWithANameConstantIsNotAPlugin(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "collage-lib")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	src := "package lib\n\nconst Name = \"elagoht/lib\"\n\ntype Store struct{}\n"
+	if err := os.WriteFile(filepath.Join(dir, "lib.go"), []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p, err := parse(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p != nil {
+		t.Errorf("parse = %q, want no plugin", p.name)
 	}
 }
 

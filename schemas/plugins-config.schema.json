@@ -284,6 +284,12 @@
       "markdownDescription": "A collage plugin that purges a CDN's copies of the pages collage invalidates.\n\n[collage-cdnpurge](https://github.com/Elagoht/collage-cdnpurge)",
       "additionalProperties": false
     },
+    "elagoht/client": {
+      "type": "object",
+      "description": "A collage plugin that serves a tiny client script: element getter shorthands, and a fragment fetched from its own URL put in place by replacing or morphing. It takes no configuration from JSON: it is configured in Go.",
+      "markdownDescription": "A collage plugin that serves a tiny client script: element getter shorthands, and a fragment fetched from its own URL put in place by replacing or morphing.\n\n[collage-client](https://github.com/Elagoht/collage-client)\n\nIt takes no configuration from JSON: it is configured in Go.",
+      "additionalProperties": false
+    },
     "elagoht/compress": {
       "type": "object",
       "description": "A collage plugin that compresses responses with Brotli and gzip.",

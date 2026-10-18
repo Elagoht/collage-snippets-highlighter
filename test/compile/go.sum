@@ -1,9 +1,13 @@
 github.com/Elagoht/collage v0.61.2 h1:ctKXfb03zDbeXXObK07ZrBLGUlekckih7vs+QpV44EQ=
 github.com/Elagoht/collage v0.61.2/go.mod h1:tyGWGpujZXtCFFxn9pjws85HOFOt4QdiuRswwQhj1Qw=
+github.com/Elagoht/collage v0.67.0 h1:ZjREskagGY8/gIWqBFaXdZfDCF9jXvitNY2srzZkn3s=
+github.com/Elagoht/collage v0.67.0/go.mod h1:tyGWGpujZXtCFFxn9pjws85HOFOt4QdiuRswwQhj1Qw=
 github.com/Elagoht/collage-flash v0.2.0 h1:tT+KwW+cgxwvwCiDJBBHMJBZpil8ysVwaqy1hqmCElI=
 github.com/Elagoht/collage-flash v0.2.0/go.mod h1:rbmIgnMyar8tDv7jwC2s2WE0CXDLkHcnqC4yUazq5Wc=
 github.com/Elagoht/collage-jsonld v0.3.0 h1:lgCu+iLPspulXC6EvbrIdX3Y3LanGzMbrLpxtA/ND+A=
 github.com/Elagoht/collage-jsonld v0.3.0/go.mod h1:uEwtTaKq6sN3WKISDiJx0pC5Oq9EAYHpHPnxQwDyrtA=
+github.com/Elagoht/collage-jsonld v0.6.0 h1:dvumRm3aNYuBGZS4ZJHMO0QP0l1fKqisalrJzVg3vTw=
+github.com/Elagoht/collage-jsonld v0.6.0/go.mod h1:uEwtTaKq6sN3WKISDiJx0pC5Oq9EAYHpHPnxQwDyrtA=
 github.com/Elagoht/collage-meta v0.3.0 h1:y4NixoFsMN1bQO1F8wIJrRICp/7Ovb/J8332wXqKdls=
 github.com/Elagoht/collage-meta v0.3.0/go.mod h1:QmvlQF0G8NBafmb2qjC2lBZHR9rvwIop5/JBCvcsdrc=
 github.com/Elagoht/collage-validate v0.2.0 h1:dfvVJSv/j4yARkOlV/DSmOY2kf2zIQ9RbcUCEAqu3Mg=

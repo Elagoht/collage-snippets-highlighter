@@ -66,6 +66,7 @@ func (s *schema) MarshalJSON() ([]byte, error) {
 // pkg is one plugin package, parsed.
 type pkg struct {
 	name   string // the plugin's Name constant
+	plugin bool   // a method named Name: the package has a Plugin
 	doc    string
 	types  map[string]*ast.TypeSpec
 	consts map[string][]string // named string type -> its constant values
@@ -184,6 +185,11 @@ func parse(dir string) (*pkg, error) {
 				p.doc = firstSentence(file.Doc.Text())
 			}
 			for _, decl := range file.Decls {
+				// A plugin's Name method: a library that names itself with a
+				// Name constant, as collage-redis does, but has no Plugin is not one.
+				if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name == "Name" && fn.Recv != nil {
+					p.plugin = true
+				}
 				if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name == "UnmarshalJSON" && fn.Recv != nil && len(fn.Recv.List) == 1 {
 					recv := fn.Recv.List[0].Type
 					if star, ok := recv.(*ast.StarExpr); ok {
@@ -225,7 +231,7 @@ func parse(dir string) (*pkg, error) {
 				}
 			}
 		}
-		if p.name != "" {
+		if p.name != "" && p.plugin {
 			return p, nil
 		}
 	}

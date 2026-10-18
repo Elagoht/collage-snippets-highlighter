@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.20.0
+
+- **`{{clientjs}}` is known** (collage-client v0.1.1, `elagoht/client`): highlighted,
+  completed and described on hover. It renders the deferred `<script>` for
+  `collage.$`, `collage.$$`, `collage.replace` and `collage.morph`; with a CSP,
+  `{{clientjs cspNonce}}`. `plugins-config.json` knows `elagoht/client`, which takes
+  no configuration from JSON.
+- `schemagen` takes a package for a plugin only when it has a `Name` method, not
+  just a `Name` constant: collage-redis (v0.1.0), a `collage.SharedCache` library
+  with no Plugin, gets no key in `plugins-config.json`.
+- The Go snippets compile against collage v0.67.0 and collage-jsonld v0.6.0; none
+  needed a change. No snippet mounts with `app.Handle` (v0.67.0's
+  `collage.WithMiddleware`) or uses `collage.SharedCache` (v0.66.0).
+
 ## 0.19.0
 
 - **`plugins-config.json` follows the plugins' v1 conventions** (the sealing

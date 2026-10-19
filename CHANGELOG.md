@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.21.0
+
+- Hover text follows collage-client v0.2.0 and collage-live v0.6.0:
+  `{{clientjs}}` lists `collage.put`, which swaps markup already in hand;
+  `{{liveClient}}` writes collage-client's script before its own, since live now
+  puts every answer in through `collage.put`; and `data-collage-swap="morph"`
+  is collage-client's morph, which matches elements by id.
+- `plugins-config.json` carries collage-client's new description. No plugin's
+  configuration changed.
+
 ## 0.20.0
 
 - **`{{clientjs}}` is known** (collage-client v0.1.1, `elagoht/client`): highlighted,

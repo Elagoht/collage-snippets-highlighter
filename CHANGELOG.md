@@ -3,7 +3,7 @@
 ## Unreleased
 
 - **A template path in Go opens its file**: in
-  `collage.NewFragment("layout", "layouts/master.html")` the path is a link —
+  `collage.NewFragment("layout", "layouts/master.html")` the path goes to its file —
   underlined on Cmd/Ctrl+hover, opened on Cmd/Ctrl+click or F12 — to the file
   under the project's template root (`Config.Template.Root`, as `collage-inspect`
   reports it; `templates` when no inspection has succeeded). NewFragment is the only collage

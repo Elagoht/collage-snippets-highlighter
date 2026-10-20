@@ -17,7 +17,7 @@ import { register as registerInlineHTML, VirtualDocuments } from "./inlinehtml";
 import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, inComment, typeLabel, walk, type Value } from "./datatypes";
 import { inlineTemplates, inlineUses } from "./embedded";
 import { slotBindingAt, slotBindings, templateByName, templateSlots, type Parent } from "./goslots";
-import { resolveTemplate, templatePathAt, templatePaths } from "./templatelinks";
+import { resolveTemplate, templatePathAt } from "./templatelinks";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -65,7 +65,6 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerCompletionItemProvider("go", new FunctionSnippets(projects, virtual)),
     vscode.languages.registerHoverProvider("html", new Hover(projects)),
     vscode.languages.registerDefinitionProvider("html", new Definition(projects)),
-    vscode.languages.registerDocumentLinkProvider("go", new TemplateLinks(projects)),
     vscode.languages.registerDefinitionProvider("go", new TemplateDefinition(projects)),
     vscode.workspace.registerTextDocumentContentProvider("collage-schema", schema),
     vscode.commands.registerCommand("collage.refresh", async () => {
@@ -516,25 +515,9 @@ class Definition implements vscode.DefinitionProvider {
   }
 }
 
-/** NewFragment's template path in Go, linked to its file: underlined on Cmd/Ctrl+hover. */
-class TemplateLinks implements vscode.DocumentLinkProvider {
-  constructor(private readonly projects: Projects) {}
-
-  async provideDocumentLinks(doc: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
-    if (doc.uri.scheme !== "file") return [];
-    const project = await this.projects.forFile(doc.fileName);
-    if (!project) return [];
-    const ext = project.inspection?.templateExtension ?? "";
-    const out: vscode.DocumentLink[] = [];
-    for (const p of templatePaths(doc.getText())) {
-      const file = await resolveTemplate(project.templateDir, p.value, ext);
-      if (file) out.push(new vscode.DocumentLink(new vscode.Range(doc.positionAt(p.start), doc.positionAt(p.end)), vscode.Uri.file(file)));
-    }
-    return out;
-  }
-}
-
-/** The same path to go-to-definition, so F12 and Cmd/Ctrl+click on it open the file too. */
+/** NewFragment's template path in Go, as a definition: underlined on Cmd/Ctrl+hover,
+ * opened on Cmd/Ctrl+click or F12. A definition rather than a document link, so it is
+ * worked out at click time and one click opens one editor. */
 class TemplateDefinition implements vscode.DefinitionProvider {
   constructor(private readonly projects: Projects) {}
 

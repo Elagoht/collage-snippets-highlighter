@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.22.0
 
 - **`clayout` writes `Master()` and `layouts/master.html`**, the names `collage new`
   gives the layout from collage v0.68.0 (was `Layout()` and `default.html`).
@@ -11,6 +11,8 @@
   reports it; `templates` when no inspection has succeeded). NewFragment is the only collage
   constructor that takes a template path. A path is linked only when it is a
   string literal on its own and the file exists.
+- `plugins-config.json` describes elagoht/favicon v0.3.0's `source` and `svg`:
+  by default the site's own `/static/icon.png` and `/static/icon.svg`.
 
 ## 0.21.0
 

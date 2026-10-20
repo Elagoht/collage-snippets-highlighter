@@ -683,7 +683,7 @@
         },
         "source": {
           "type": "string",
-          "description": "Source is the path of the source image: a PNG (or JPEG, or GIF), square, ideally 512 pixels or larger. It is read from FS when FS is set, and from disk, relative to the working directory, otherwise. Ignored when SourceBytes is set."
+          "description": "Source is the source image: a PNG (or JPEG, or GIF), square, ideally 512 pixels or larger. A path starting with \"/\" is a URL of the site's own, read through the application's mount that serves it — the default, \"/static/icon.png\", is static/icon.png, embedded in a built binary. Any other path is read from FS when FS is set, and from disk, relative to the working directory, otherwise. Ignored when SourceBytes is set."
         },
         "startURL": {
           "type": "string",
@@ -691,7 +691,7 @@
         },
         "svg": {
           "type": "string",
-          "description": "SVG is the path of an SVG version of the icon, read the way Source is and served unchanged as /icon.svg. Optional: an SVG is not rasterised, so it is never a substitute for Source."
+          "description": "SVG is an SVG version of the icon, read the way Source is and served unchanged as /icon.svg. Optional: an SVG is not rasterised, so it is never a substitute for Source. With neither set, \"/static/icon.svg\" is used when the site has one."
         },
         "themeColor": {
           "type": "string",

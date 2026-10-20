@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **A template path in Go opens its file**: in
+  `collage.NewFragment("layout", "layouts/master.html")` the path is a link —
+  underlined on Cmd/Ctrl+hover, opened on Cmd/Ctrl+click or F12 — to the file
+  under the project's template root (`Config.Template.Root`, as `collage-inspect`
+  reports it; `templates` when no inspection has succeeded). NewFragment is the only collage
+  constructor that takes a template path. A path is linked only when it is a
+  string literal on its own and the file exists.
+
 ## 0.21.0
 
 - Hover text follows collage-client v0.2.0 and collage-live v0.6.0:

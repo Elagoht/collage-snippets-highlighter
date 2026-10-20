@@ -4,8 +4,8 @@
 // What is here needs to know the project: completion and hover for template
 // functions, names in their arguments (pages, fragments, slots, files) from what
 // `go run . collage-inspect` reports, the plugins' collage.json manifests,
-// diagnostics for names that do not exist, go-to-definition, and a
-// plugins-config.json schema that includes every plugin the project depends on.
+// diagnostics for names that do not exist, go-to-definition, links from a Go
+// template path to its file, and a plugins-config.json schema that includes every plugin the project depends on.
 import * as vscode from "vscode";
 import catalogJSON from "../data/catalog.json";
 import staticSchemaJSON from "../schemas/plugins-config.schema.json";
@@ -17,6 +17,7 @@ import { register as registerInlineHTML, VirtualDocuments } from "./inlinehtml";
 import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, inComment, typeLabel, walk, type Value } from "./datatypes";
 import { inlineTemplates, inlineUses } from "./embedded";
 import { slotBindingAt, slotBindings, templateByName, templateSlots, type Parent } from "./goslots";
+import { resolveTemplate, templatePathAt, templatePaths } from "./templatelinks";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -64,6 +65,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerCompletionItemProvider("go", new FunctionSnippets(projects, virtual)),
     vscode.languages.registerHoverProvider("html", new Hover(projects)),
     vscode.languages.registerDefinitionProvider("html", new Definition(projects)),
+    vscode.languages.registerDocumentLinkProvider("go", new TemplateLinks(projects)),
+    vscode.languages.registerDefinitionProvider("go", new TemplateDefinition(projects)),
     vscode.workspace.registerTextDocumentContentProvider("collage-schema", schema),
     vscode.commands.registerCommand("collage.refresh", async () => {
       for (const p of await projects.all()) await p.refresh();
@@ -510,6 +513,43 @@ class Definition implements vscode.DefinitionProvider {
     const rel = urlPath.slice(mount.prefix.length);
     const found = await vscode.workspace.findFiles(new vscode.RelativePattern(project.root, `**/${rel}`), "**/{vendor,node_modules}/**", 5);
     return found.map((uri) => new vscode.Location(uri, new vscode.Position(0, 0)));
+  }
+}
+
+/** NewFragment's template path in Go, linked to its file: underlined on Cmd/Ctrl+hover. */
+class TemplateLinks implements vscode.DocumentLinkProvider {
+  constructor(private readonly projects: Projects) {}
+
+  async provideDocumentLinks(doc: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
+    if (doc.uri.scheme !== "file") return [];
+    const project = await this.projects.forFile(doc.fileName);
+    if (!project) return [];
+    const ext = project.inspection?.templateExtension ?? "";
+    const out: vscode.DocumentLink[] = [];
+    for (const p of templatePaths(doc.getText())) {
+      const file = await resolveTemplate(project.templateDir, p.value, ext);
+      if (file) out.push(new vscode.DocumentLink(new vscode.Range(doc.positionAt(p.start), doc.positionAt(p.end)), vscode.Uri.file(file)));
+    }
+    return out;
+  }
+}
+
+/** The same path to go-to-definition, so F12 and Cmd/Ctrl+click on it open the file too. */
+class TemplateDefinition implements vscode.DefinitionProvider {
+  constructor(private readonly projects: Projects) {}
+
+  async provideDefinition(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.LocationLink[] | undefined> {
+    if (doc.uri.scheme !== "file") return undefined;
+    const p = templatePathAt(doc.getText(), doc.offsetAt(pos));
+    if (!p) return undefined;
+    const project = await this.projects.forFile(doc.fileName);
+    if (!project) return undefined;
+    const file = await resolveTemplate(project.templateDir, p.value, project.inspection?.templateExtension ?? "");
+    if (!file) return undefined;
+    // The whole path is what is underlined, not the word under the pointer.
+    const origin = new vscode.Range(doc.positionAt(p.start - 1), doc.positionAt(p.end + 1));
+    const start = new vscode.Range(0, 0, 0, 0);
+    return [{ originSelectionRange: origin, targetUri: vscode.Uri.file(file), targetRange: start, targetSelectionRange: start }];
   }
 }
 

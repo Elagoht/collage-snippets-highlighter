@@ -259,9 +259,9 @@ export const functionSnippets: FunctionSnippet[] = [
     prefix: "clayout",
     description: "collage: a layout — a fragment whose template calls {{slot \"content\"}} (fragments/layouts)",
     body: [
-      "// Returns the shell every page renders inside: templates/layouts/${1:default}.html.",
-      "func ${2:Layout}() *collage.Fragment {",
-      "\treturn collage.NewFragment(\"${3:layout}\", \"layouts/${1:default}.html\").",
+      "// Returns the shell every page renders inside: templates/layouts/${1:master}.html.",
+      "func ${2:Master}() *collage.Fragment {",
+      "\treturn collage.NewFragment(\"${3:layout}\", \"layouts/${1:master}.html\").",
       "\t\tWithTitle(\"${4:Site title}\").",
       "\t\t$0Build()",
       "}",

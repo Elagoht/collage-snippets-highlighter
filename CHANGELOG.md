@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **`clayout` writes `Master()` and `layouts/master.html`**, the names `collage new`
+  gives the layout from collage v0.68.0 (was `Layout()` and `default.html`).
 - **A template path in Go opens its file**: in
   `collage.NewFragment("layout", "layouts/master.html")` the path goes to its file —
   underlined on Cmd/Ctrl+hover, opened on Cmd/Ctrl+click or F12 — to the file

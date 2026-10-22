@@ -509,14 +509,27 @@
     },
     "elagoht/devtoolbar": {
       "type": "object",
-      "description": "A collage plugin that shows a small panel at the bottom of every page in development.",
+      "description": "A collage plugin that shows a small panel on every page in development, in the bottom-left corner unless Options.Position puts it elsewhere.",
       "properties": {
         "allowRemote": {
           "type": "boolean",
           "description": "AllowRemote shows the panel to every client. By default only a client on the developer's machine or a private network sees it (loopback, RFC 1918, IPv6 unique-local and link-local addresses, as collage.ClientIP names the client): a request from anywhere else means development mode is serving the public, and its responses go out untouched."
+        },
+        "position": {
+          "type": "string",
+          "description": "Position is where on the screen the panel sits: one of the four corners, \"top-left\", \"top-right\", \"bottom-right\", \"bottom-left\", or the middle of the top or bottom edge, \"top\", \"bottom\". Empty is \"bottom-left\".",
+          "enum": [
+            "",
+            "bottom",
+            "bottom-left",
+            "bottom-right",
+            "top",
+            "top-left",
+            "top-right"
+          ]
         }
       },
-      "markdownDescription": "A collage plugin that shows a small panel at the bottom of every page in development.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)",
+      "markdownDescription": "A collage plugin that shows a small panel on every page in development, in the bottom-left corner unless Options.Position puts it elsewhere.\n\n[collage-devtoolbar](https://github.com/Elagoht/collage-devtoolbar)",
       "additionalProperties": false
     },
     "elagoht/errortrack": {
@@ -1055,7 +1068,7 @@
         },
         "unsafe": {
           "type": "boolean",
-          "description": "Unsafe lets raw HTML written in the Markdown through to the page. Off, it is left out, so a document cannot put a script on the site."
+          "description": "Unsafe lets raw HTML written in the Markdown through to the page. Off, it is left out, so a document cannot put a script on the site, and a heading's {…} attributes lose style and any on… handler, so it cannot restyle the page either; id and class are kept."
         }
       },
       "markdownDescription": "A collage plugin that makes a directory of Markdown files page data.\n\n[collage-markdown](https://github.com/Elagoht/collage-markdown)",
@@ -1793,7 +1806,7 @@
         },
         "maxHosts": {
           "type": "integer",
-          "description": "MaxHosts bounds how many hosts' answers are kept, so a client sending random Host headers cannot grow memory or make Resolve run without end. Zero means 10000; a negative value is an error."
+          "description": "MaxHosts bounds how many hosts' answers are kept, so a client sending random Host headers cannot grow memory or make Resolve run without end. Tenants and \"no tenant\" answers are kept apart, up to MaxHosts each, so hosts nobody serves never push a real tenant's answer out. Zero means 10000; a negative value is an error."
         },
         "tenants": {
           "type": "array",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.1
+
+- `plugins-config.json` describes elagoht/devtoolbar v0.5.0's `position`: the
+  panel in a corner — `top-left`, `top-right`, `bottom-right`, `bottom-left`, the
+  default — or the middle of the top or bottom edge, `top` or `bottom`.
+- The descriptions of elagoht/markdown's `unsafe` and elagoht/tenant's
+  `maxHosts` follow their latest releases.
+
 ## 0.23.0
 
 - **`cdata`** writes a data handler made by a function that takes what it reads

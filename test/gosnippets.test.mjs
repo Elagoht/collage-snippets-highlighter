@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { expand, placeholders } from "./expand.mjs";
 
 const require = createRequire(import.meta.url);
-const { packageName, hasPackageClause, headerEdits, functionSnippets, COLLAGE_IMPORT } = require("../out/src/gosnippets.js");
+const { packageName, hasPackageClause, headerEdits, functionSnippets, viewTypes, snippetBody, COLLAGE_IMPORT } = require("../out/src/gosnippets.js");
 
 // apply applies insertions, last first, so earlier offsets stay valid.
 const apply = (text, edits) =>
@@ -186,5 +186,35 @@ test("every function a template snippet calls exists", async () => {
         assert.ok(catalog.has(word) || builtins.has(word), `${s.prefix}: {{${action}}} calls ${word}, which neither collage nor a plugin has`);
       }
     }
+  }
+});
+
+test("the view types a file declares, in order, past comments and in groups", () => {
+  assert.deepEqual(viewTypes("package p\n"), []);
+  assert.deepEqual(viewTypes("type aboutView struct {\n\tTitle string\n}\n"), ["aboutView"]);
+  const text = [
+    "// type commentedView struct{}",
+    "type listView struct{}",
+    "type (",
+    "\trowView struct{}",
+    "\tplain struct{}",
+    ")",
+    "type viewer struct{}",
+    "type aliasView = listView",
+  ].join("\n");
+  assert.deepEqual(viewTypes(text), ["listView", "rowView"]);
+});
+
+test("a data handler snippet returns the file's view: its default, a choice, or its own", () => {
+  const byPrefix = Object.fromEntries(functionSnippets.map((s) => [s.prefix, s]));
+  for (const prefix of ["cdata", "cload"]) {
+    const s = byPrefix[prefix];
+    assert.equal(snippetBody(s, "package p\n"), s.body.join("\n"), `${prefix} without a view`);
+    const one = snippetBody(s, "type aboutView struct{}\n");
+    assert.match(expand([one]), /\(aboutView, error\)/, `${prefix} with one view`);
+    assert.match(expand([one]), /return aboutView\{\}, nil/, `${prefix} mirrors it`);
+    const two = snippetBody(s, "type listView struct{}\ntype rowView struct{}\n");
+    assert.ok(two.includes(`\${${s.view}|listView,rowView|}`), `${prefix} offers a choice`);
+    assert.match(expand([two], 1), /\(rowView, error\)[\s\S]*return rowView\{\}/, `${prefix} mirrors the choice`);
   }
 });

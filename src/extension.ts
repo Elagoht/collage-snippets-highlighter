@@ -12,7 +12,7 @@ import staticSchemaJSON from "../schemas/plugins-config.schema.json";
 import { Projects, type Project, type Manifest } from "./project";
 import { allCalls, stringArgAt } from "./template";
 import { namesFor, unknownName } from "./names";
-import { functionSnippets, headerEdits, packageName } from "./gosnippets";
+import { functionSnippets, headerEdits, packageName, snippetBody } from "./gosnippets";
 import { register as registerInlineHTML, VirtualDocuments } from "./inlinehtml";
 import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, inComment, typeLabel, walk, type Value } from "./datatypes";
 import { inlineTemplates, inlineUses } from "./embedded";
@@ -423,7 +423,7 @@ class FunctionSnippets implements vscode.CompletionItemProvider {
     const pkg = packageFor(doc);
     return functionSnippets.map((s) => {
       const item = new vscode.CompletionItem({ label: s.prefix, description: "collage" }, vscode.CompletionItemKind.Snippet);
-      item.insertText = new vscode.SnippetString(s.body.join("\n"));
+      item.insertText = new vscode.SnippetString(snippetBody(s, text));
       item.documentation = new vscode.MarkdownString(s.description);
       item.additionalTextEdits = headerEdits(text, pkg, s.imports).map((e) => vscode.TextEdit.insert(doc.positionAt(e.offset), e.text));
       return item;

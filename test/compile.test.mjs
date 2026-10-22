@@ -76,6 +76,7 @@ const specs = {
     wrap: { imports: [COLLAGE_IMPORT], before: "var _ collage.Data = ", after: "" },
     context: { imports: [], src: ["type nameView struct{}"] },
   },
+  cdata: { context: { imports: [], src: ["type nameView struct{}"] } },
   cstate: {
     context: {
       imports: [COLLAGE_IMPORT],

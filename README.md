@@ -50,7 +50,7 @@ the snippet repeats it.
 | `cpage`, `cpagea`, `cpagep`, `cpage404` | a page; with its form's action (`WithActionFor`); at a path with a `{parameter}`; the not-found page |
 | `cfrag` | a page's content: an inline template, its view struct, a typed `collage.Load` handler |
 | `cfragf`, `cfragd`, `cfrags`, `cfrag404` | a fragment with a template file; whose handler takes a service; with a slot filled per render; the not-found content |
-| `chtml`, `cload`, `cstate` | a `collage.InlineHTML` constant; a typed data handler for `WithData`; a `collage.Key` for a value shared within a render |
+| `chtml`, `cload`, `cdata`, `cstate` | a `collage.InlineHTML` constant; a typed data handler for `WithData`; a data handler made by a function that takes a service, `WithData(nameData(service))`; a `collage.Key` for a value shared within a render. `cload` and `cdata` return the file's own `…View` type: the one it declares, or a choice when it declares several |
 | `clayout`, `clayoutg` | a layout; a layout with a guard |
 | `cguard` | a guard: `nil` lets the request through, a decision redirects |
 | `cact`, `cactp` | an action builder: attached to its page; at a URL of its own |

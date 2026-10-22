@@ -16,6 +16,9 @@ export interface FunctionSnippet {
   description: string;
   body: string[];
   imports: string[];
+  /** view is the placeholder whose default is a view type: offered as the
+   * document's own, when it declares one (see snippetBody). */
+  view?: number;
 }
 
 // The snippets follow the layout `collage new` scaffolds and `collage add` writes:
@@ -110,7 +113,7 @@ export const functionSnippets: FunctionSnippet[] = [
       "// Returns the ${1:name} page's content.",
       "func ${3:Name}() *collage.Fragment {",
       "\treturn collage.NewInlineFragment(\"${1:name}\", ${1:name}Block).",
-      "\t\tWithData(collage.Load(${1:name}Data)).",
+      "\t\tWithData(${1:name}Data()).",
       "\t\tBuild()",
       "}",
       "",
@@ -118,14 +121,17 @@ export const functionSnippets: FunctionSnippet[] = [
       "  ${4:<h1>{{.Title\\}\\}</h1>}",
       "</main>`",
       "",
-      "// Reads what this page renders.",
-      "func ${1:name}Data(",
-      "\t_ context.Context,",
-      "\trc *collage.RenderContext,",
-      ") (${1:name}View, error) {",
-      "\trc.HoistTitle(\"${5:Title}\")",
-      "\t$0",
-      "\treturn ${1:name}View{${6:Title: \"${5:Title}\"}}, nil",
+      "// Reads what this page renders. What it reads through — a service, a store — comes",
+      "// in as ${1:name}Data's parameters, passed on by ${3:Name}.",
+      "func ${1:name}Data() collage.Data {",
+      "\treturn collage.Load(func(",
+      "\t\t_ context.Context,",
+      "\t\trc *collage.RenderContext,",
+      "\t) (${1:name}View, error) {",
+      "\t\trc.HoistTitle(\"${5:Title}\")",
+      "\t\t$0",
+      "\t\treturn ${1:name}View{${6:Title: \"${5:Title}\"}}, nil",
+      "\t})",
       "}",
     ],
     imports: ["context", COLLAGE_IMPORT],
@@ -226,7 +232,7 @@ export const functionSnippets: FunctionSnippet[] = [
   },
   {
     prefix: "cload",
-    description: "collage: a typed data handler, with collage.Load — WithData's argument",
+    description: "collage: a typed data handler, with collage.Load — WithData's argument; its type is the file's view, when it declares one",
     body: [
       "collage.Load(func(",
       "\tctx context.Context,",
@@ -237,6 +243,27 @@ export const functionSnippets: FunctionSnippet[] = [
       "})",
     ],
     imports: ["context", COLLAGE_IMPORT],
+    view: 1,
+  },
+  {
+    prefix: "cdata",
+    description: "collage: a data handler made by a function that takes what it reads through — WithData(nameData(service)); its type is the file's view, when it declares one",
+    body: [
+      "// Reads what ${1:name} renders, through ${2:service}.",
+      "func ${1:name}Data(",
+      "\t${2:service} ${3:*domain.Service},",
+      ") collage.Data {",
+      "\treturn collage.Load(func(",
+      "\t\tctx context.Context,",
+      "\t\trc *collage.RenderContext,",
+      "\t) (${4:nameView}, error) {",
+      "\t\t$0",
+      "\t\treturn ${4:nameView}{}, nil",
+      "\t})",
+      "}",
+    ],
+    imports: ["context", COLLAGE_IMPORT],
+    view: 4,
   },
   {
     prefix: "cstate",
@@ -771,6 +798,37 @@ export const functionSnippets: FunctionSnippet[] = [
     imports: ["context", COLLAGE_IMPORT],
   },
 ];
+/** viewTypes lists, in order, the struct types text declares whose names end in
+ * View: what a data handler in that file returns. Comments are skipped; a type
+ * in a grouped declaration counts. */
+export function viewTypes(text: string): string[] {
+  const found: string[] = [];
+  const re = /^[ \t]*(?:type[ \t]+)?([A-Za-z_]\w*View)[ \t]+struct\b/gm;
+  const code = blankComments(text);
+  for (let m = re.exec(code); m; m = re.exec(code)) {
+    if (!found.includes(m[1])) found.push(m[1]);
+  }
+  return found;
+}
+
+/** snippetBody is s's body for a document holding text. The placeholder s.view
+ * names offers the document's own view types: the one it declares as the
+ * default, a choice when it declares several, and the snippet's own default
+ * when it declares none. Every other place of that number mirrors it. */
+export function snippetBody(s: FunctionSnippet, text: string): string {
+  const body = s.body.join("\n");
+  if (s.view === undefined) return body;
+  const views = viewTypes(text);
+  if (views.length === 0) return body;
+  const first = views.length === 1 ? `\${${s.view}:${views[0]}}` : `\${${s.view}|${views.join(",")}|}`;
+  let seen = false;
+  return body.replace(new RegExp(`\\$\\{${s.view}:[^{}]*\\}`, "g"), () => {
+    if (seen) return `\${${s.view}}`;
+    seen = true;
+    return first;
+  });
+}
+
 /** A text insertion at an offset of the document. */
 export interface Insertion {
   offset: number;

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.23.0
+
+- **`cdata`** writes a data handler made by a function that takes what it reads
+  through — `WithData(nameData(service))` — so a service reaches the handler
+  without a global.
+- **`cdata` and `cload` return the file's own view type**: the `…View` struct the
+  file declares is the handler's type, and when it declares several the
+  placeholder is a choice of them.
+- **`cfrag` writes the data handler as `nameData() collage.Data`**, the shape
+  `collage add page` writes from collage v0.73.0, so a service is one parameter
+  away.
+
 ## 0.22.0
 
 - **`clayout` writes `Master()` and `layouts/master.html`**, the names `collage new`

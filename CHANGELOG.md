@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.2
+
+- `plugins-config.json` says where `keyEnv` falls back to when it is left out:
+  `SESSION_KEY` (and `SESSION_PREVIOUS_KEYS`) for elagoht/session v0.5.0,
+  `FLASH_KEY` for elagoht/flash v0.3.0, `HONEYPOT_KEY` for elagoht/honeypot
+  v0.6.0, `SECURE_KEY` for elagoht/secure v0.4.0, and `OAUTH_KEY` (and
+  `OAUTH_PREVIOUS_KEYS`) for elagoht/oauth v0.3.0.
+
 ## 0.23.1
 
 - `plugins-config.json` describes elagoht/devtoolbar v0.5.0's `position`: the

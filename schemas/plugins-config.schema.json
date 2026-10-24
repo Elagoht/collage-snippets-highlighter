@@ -730,7 +730,7 @@
         },
         "keyEnv": {
           "type": "string",
-          "description": "KeyEnv names the environment variable holding the signing key, hex-encoded (`openssl rand -hex 32`). When set, the variable must hold a key, and it is used instead of Key."
+          "description": "KeyEnv names the environment variable holding the signing key, hex-encoded (`openssl rand -hex 32`). When set, the variable must hold a key, and it is used instead of Key. Unset, FLASH_KEY (DefaultKeyEnv) is read."
         },
         "maxAge": {
           "type": "string",
@@ -820,7 +820,7 @@
         },
         "keyEnv": {
           "type": "string",
-          "description": "KeyEnv names the environment variable holding the signing key, hex-encoded: at least 32 random bytes, the same on every instance and across restarts. When set, it wins over Key, and an empty or non-hex variable is an error. With neither, a key is generated per process, and a form served before a restart, or by another instance, is refused."
+          "description": "KeyEnv names the environment variable holding the signing key, hex-encoded: at least 32 random bytes, the same on every instance and across restarts. When set, it wins over Key, and an empty or non-hex variable is an error. With neither, the key is read from HONEYPOT_KEY (DefaultKeyEnv); with that empty too, a key is generated per process, and a form served before a restart, or by another instance, is refused."
         },
         "maxAge": {
           "type": "string",
@@ -1147,7 +1147,7 @@
         },
         "keyEnv": {
           "type": "string",
-          "description": "KeyEnv names the environment variable holding Key, hex-encoded. When set, it wins over Key, and an unset, empty or non-hex variable is an error."
+          "description": "KeyEnv names the environment variable holding Key, hex-encoded. When set, it wins over Key, and an unset, empty or non-hex variable is an error. Unset, with no Key either, the key is read from OAUTH_KEY (DefaultKeyEnv)."
         },
         "prefix": {
           "type": "string",
@@ -1155,7 +1155,7 @@
         },
         "previousKeysEnv": {
           "type": "string",
-          "description": "PreviousKeysEnv names the environment variable holding PreviousKeys, hex-encoded and comma-separated. When set, it wins over PreviousKeys; a variable that is not set, or a key in it that is not hex, is an error, and one set but empty is no previous keys."
+          "description": "PreviousKeysEnv names the environment variable holding PreviousKeys, hex-encoded and comma-separated. When set, it wins over PreviousKeys; a variable that is not set, or a key in it that is not hex, is an error, and one set but empty is no previous keys. Unset, with no PreviousKeys either, they are read from OAUTH_PREVIOUS_KEYS (DefaultPreviousKeysEnv)."
         },
         "providers": {
           "type": "array",
@@ -1698,7 +1698,7 @@
         },
         "keyEnv": {
           "type": "string",
-          "description": "KeyEnv names the environment variable holding the key, hex-encoded. When set, it wins over Key, and an empty or non-hex variable is an error."
+          "description": "KeyEnv names the environment variable holding the key, hex-encoded. When set, it wins over Key, and an empty or non-hex variable is an error. Unset, with no Key either, the key is read from SECURE_KEY (DefaultKeyEnv)."
         },
         "permissionsPolicy": {
           "type": "string",
@@ -1739,7 +1739,7 @@
         },
         "keyEnv": {
           "type": "string",
-          "description": "KeyEnv names the environment variable holding the key, hex-encoded. When set, it wins over Key, and an unset, empty or non-hex variable is an error."
+          "description": "KeyEnv names the environment variable holding the key, hex-encoded. When set, it wins over Key, and an unset, empty or non-hex variable is an error. Unset, with no Key either, the key is read from SESSION_KEY (DefaultKeyEnv)."
         },
         "maxAge": {
           "type": "string",
@@ -1756,7 +1756,7 @@
         },
         "previousKeysEnv": {
           "type": "string",
-          "description": "PreviousKeysEnv names the environment variable holding the previous keys, hex-encoded and comma-separated. When set, it wins over PreviousKeys; a variable that is not set, or a key in it that is not hex, is an error, and one set but empty is no previous keys."
+          "description": "PreviousKeysEnv names the environment variable holding the previous keys, hex-encoded and comma-separated. When set, it wins over PreviousKeys; a variable that is not set, or a key in it that is not hex, is an error, and one set but empty is no previous keys. Unset, with no PreviousKeys either, they are read from SESSION_PREVIOUS_KEYS (DefaultPreviousKeysEnv)."
         },
         "sameSite": {
           "type": "string",

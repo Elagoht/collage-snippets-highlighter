@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.24.0
+
+For collage v0.77.0.
 
 - **Page, document and action names in Go**: the name argument of
   `collage.SeeOtherPage`, `collage.GuardSeeOtherPage`, `collage.URL`, a

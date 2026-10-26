@@ -197,10 +197,38 @@ With that it completes, in string arguments:
 | `slot "…"` | the slots of the fragment rendering this template |
 | `asset "…"`, `stylesheet "…"` | the files the mounts serve |
 
+and in Go, where a string argument names a page, document or action:
+
+| Where | What |
+| --- | --- |
+| `collage.SeeOtherPage(rc, "…"`, `collage.GuardSeeOtherPage(ctx, "…"`, `collage.URL(ctx, "…"` | pages and documents |
+| `rc.URL("…"`, `app.URL("…", "…"` | pages and documents, then (App's) the locale |
+| `rc.ActionURL("…"`, `app.ActionURL("…", "…"` | actions, then (App's) the locale |
+| `app.FragmentURL("…", "…", "…"` | pages with fragment paths, their fragments, the locale |
+| `app.Page("…"`, `app.PageURLs(ctx, "…"` | pages |
+| `session.RequireUserPage("…"`, `session.RequirePage(key, "…"`, `session.RequireGuestPage("…"` | pages and documents |
+| `paginate.PathNamed(rc, "…", "…"` | pages and documents |
+
+collage's own are recognised under whatever name the file imports it as;
+the plugins' by their function names.
+
 It warns about a page, a fragment or a file that does not exist — not about a slot:
 a template calling `{{slot "x"}}` declares `x`, and one nothing fills renders empty.
+In Go it warns about a page, document or action name the same way, except one the
+file itself declares with `NewPage`, `NewDocument` or `NewAction`, which the last
+inspection may be from before.
 F12 on a page name opens the `NewPage("…")` that declares it; on a slot, the binding;
 on an asset, the file.
+
+In Go, the template path of `collage.NewFragment("layout", "layouts/master.html")` —
+what `collage add … --file` writes — goes to its file: underlined on
+Cmd/Ctrl+hover, opened on Cmd/Ctrl+click or F12. So does a path held in a const
+or variable of the same file and passed to `NewFragment`. The file is looked for
+under the template root the inspection reports, and, before one has succeeded or
+while the application cannot start, under `templates` and then anywhere in the
+project, with `.html` added to a path written without it. A folder opened below
+its module still finds the module: the nearest `go.mod` above the file, when it
+requires collage.
 
 Running the application's `main` builds the application without serving it. A
 program that connects to a database while it builds would do so here too; turn it

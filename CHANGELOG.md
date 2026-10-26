@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- **Page, document and action names in Go**: the name argument of
+  `collage.SeeOtherPage`, `collage.GuardSeeOtherPage`, `collage.URL`, a
+  RenderContext's or App's `URL`, `ActionURL` and `FragmentURL`, `App.Page`,
+  `App.PageURLs`, elagoht/session's `RequireUserPage`, `RequirePage` and
+  `RequireGuestPage`, and elagoht/paginate's `PathNamed` completes with the
+  application's names, as `{{pageURL "…"}}` does, and a name it does not have is
+  reported — unless the file declares it.
+- **A template path in Go opens its file in more places**: a folder opened below
+  its module, or a workspace with more than 50 `go.mod` files, now finds the
+  project from the file; a `Config.Template.Root` other than `templates` works
+  before an inspection has succeeded, or while the application cannot start; a
+  path without its extension gets `.html`; and a path held in a const or variable
+  of the file is linked where it is written.
+- **collage's new template built-ins** are completed, described and coloured:
+  `json`, `pre`, `add`, `sub`, `mul`, `div`, `mod`, `min`, `max`, `addf`, `subf`,
+  `mulf`, `divf`, `withQuery`, `pathEscape`, `trim`, `replace`, `contains`,
+  `hasPrefix`, `hasSuffix`, `split`, `truncate`, `first`, `last`, `seq`, `keys`,
+  `hasKey` and `dig`.
+
 ## 0.23.2
 
 - `plugins-config.json` says where `keyEnv` falls back to when it is left out:

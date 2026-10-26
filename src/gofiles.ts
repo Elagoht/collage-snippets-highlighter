@@ -83,3 +83,23 @@ export async function scanGo(root: string, wantEmbedded: boolean): Promise<{ emb
   await visit(root);
   return { embedded: out, uses };
 }
+
+/** moduleRootOf is the directory of the go.mod nearest above file, when that
+ * module requires collage: the project a file belongs to when the workspace
+ * search did not find it — a folder opened below the module, or a workspace
+ * with more modules than the search looks at. */
+export async function moduleRootOf(file: string): Promise<string | undefined> {
+  let dir = path.dirname(file);
+  for (;;) {
+    const mod = await fs.readFile(path.join(dir, "go.mod"), "utf8").catch(() => undefined);
+    if (mod !== undefined) return requiresCollage(mod) ? dir : undefined;
+    const up = path.dirname(dir);
+    if (up === dir) return undefined;
+    dir = up;
+  }
+}
+
+/** requiresCollage is whether a go.mod requires collage, or is collage. */
+export function requiresCollage(mod: string): boolean {
+  return /github\.com\/Elagoht\/collage\s/.test(mod);
+}

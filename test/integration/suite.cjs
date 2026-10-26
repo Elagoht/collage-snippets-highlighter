@@ -28,6 +28,20 @@ async function run() {
     return;
   }
 
+  if (process.env.EXPECT === "subfolder") {
+    // The module is above the workspace: found from the file, not by the search.
+    const main = await vscode.workspace.openTextDocument(path.join(folder, "..", "main.go"));
+    await vscode.window.showTextDocument(main);
+    await ext.activate();
+    const at = main.positionAt(main.getText().indexOf('"pages/post.html"') + 5);
+    const defs = await until("the template path's definition", async () => {
+      const d = await vscode.commands.executeCommand("vscode.executeDefinitionProvider", main.uri, at);
+      return d.length ? d : undefined;
+    }, 30000);
+    assert.ok(defs.some((d) => (d.targetUri ?? d.uri).fsPath.endsWith(path.join("templates", "pages", "post.html"))), "template path: " + JSON.stringify(defs));
+    return;
+  }
+
   const doc = await vscode.workspace.openTextDocument(path.join(folder, "templates/pages/post.html"));
   await vscode.window.showTextDocument(doc);
   await ext.activate();
@@ -123,6 +137,16 @@ async function run() {
   const slotAt = main.positionAt(main.getText().indexOf('WithSlotFragment("aside"') + 'WithSlotFragment("'.length);
   const slotNames = (await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", main.uri, slotAt, '"')).items.map(label);
   assert.ok(slotNames.includes("aside"), "no slot names: " + slotNames.slice(0, 30).join(", "));
+
+  // The page SeeOtherPage names, in Go: the application's pages and documents.
+  const goPageAt = main.positionAt(main.getText().indexOf('SeeOtherPage(rc, "post"') + 'SeeOtherPage(rc, "'.length);
+  const goPages = (await vscode.commands.executeCommand("vscode.executeCompletionItemProvider", main.uri, goPageAt, '"')).items.map(label);
+  assert.ok(goPages.includes("post"), "no page names in Go: " + goPages.slice(0, 30).join(", "));
+
+  // NewFragment's template path goes to its file: what Cmd/Ctrl+click asks for.
+  const pathAt = main.positionAt(main.getText().indexOf('"pages/post.html"') + 5);
+  const pathDefs = await vscode.commands.executeCommand("vscode.executeDefinitionProvider", main.uri, pathAt);
+  assert.ok(pathDefs.some((d) => (d.targetUri ?? d.uri).fsPath.endsWith(path.join("templates", "pages", "post.html"))), "template path: " + JSON.stringify(pathDefs));
 
   // Go function snippets bring the package clause and the imports they need.
   const header = async (file) => {

@@ -17,7 +17,7 @@ import { register as registerInlineHTML, VirtualDocuments } from "./inlinehtml";
 import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, inComment, typeLabel, walk, type Value } from "./datatypes";
 import { inlineTemplates, inlineUses } from "./embedded";
 import { slotBindingAt, slotBindings, templateByName, templateSlots, type Parent } from "./goslots";
-import { resolveTemplate, templatePathAt } from "./templatelinks";
+import { findTemplate, templatePathAt } from "./templatelinks";
 import { declaredNames, goNameArgAt, goNameArgs, goNamesFor, unknownGoName } from "./gonames";
 import * as fs from "fs";
 import * as path from "path";
@@ -546,7 +546,10 @@ class Definition implements vscode.DefinitionProvider {
 
 /** NewFragment's template path in Go, as a definition: underlined on Cmd/Ctrl+hover,
  * opened on Cmd/Ctrl+click or F12. A definition rather than a document link, so it is
- * worked out at click time and one click opens one editor. */
+ * worked out at click time and one click opens one editor. It does not wait for
+ * collage-inspect: before an inspection — or while the application cannot start —
+ * a path not under `templates` is looked for under the whole project, and the
+ * extension is collage's default, .html. */
 class TemplateDefinition implements vscode.DefinitionProvider {
   constructor(private readonly projects: Projects) {}
 
@@ -556,12 +559,12 @@ class TemplateDefinition implements vscode.DefinitionProvider {
     if (!p) return undefined;
     const project = await this.projects.forFile(doc.fileName);
     if (!project) return undefined;
-    const file = await resolveTemplate(project.templateDir, p.value, project.inspection?.templateExtension ?? "");
-    if (!file) return undefined;
+    const files = await findTemplate(project.root, project.templateDir, p.value, project.inspection?.templateExtension ?? ".html");
+    if (files.length === 0) return undefined;
     // The whole path is what is underlined, not the word under the pointer.
     const origin = new vscode.Range(doc.positionAt(p.start - 1), doc.positionAt(p.end + 1));
     const start = new vscode.Range(0, 0, 0, 0);
-    return [{ originSelectionRange: origin, targetUri: vscode.Uri.file(file), targetRange: start, targetSelectionRange: start }];
+    return files.map((file) => ({ originSelectionRange: origin, targetUri: vscode.Uri.file(file), targetRange: start, targetSelectionRange: start }));
   }
 }
 

@@ -6,7 +6,7 @@ import * as cp from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { findTemplateDir, listsEmbedded, scanGo } from "./gofiles";
+import { findTemplateDir, listsEmbedded, moduleRootOf, requiresCollage, scanGo } from "./gofiles";
 import { Rerun } from "./rerun";
 
 export interface Inspection {
@@ -239,6 +239,8 @@ function exec(cmd: string, args: string[], cwd: string, timeout: number, env: Re
 /** Finds the collage projects in the workspace and hands out the one a file is in. */
 export class Projects implements vscode.Disposable {
   private readonly projects = new Map<string, Project>();
+  /** For a directory no discovered project holds: the collage module above it, or null for none. */
+  private readonly outside = new Map<string, string | null>();
   private discovered: Promise<void> | undefined;
   private readonly disposables: vscode.Disposable[] = [];
   private readonly changed = new vscode.EventEmitter<void>();
@@ -252,6 +254,7 @@ export class Projects implements vscode.Disposable {
       this.discovered = undefined;
       this.projects.forEach((p) => p.dispose());
       this.projects.clear();
+      this.outside.clear();
       void this.all().then((ps) => ps.forEach((p) => void p.refresh()));
     };
     watcher.onDidChange(rediscover);
@@ -296,7 +299,7 @@ export class Projects implements vscode.Disposable {
     const mods = await vscode.workspace.findFiles("**/go.mod", "**/{node_modules,vendor}/**", 50);
     for (const uri of mods) {
       const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
-      if (/github\.com\/Elagoht\/collage\s/.test(text)) {
+      if (requiresCollage(text)) {
         const root = path.dirname(uri.fsPath);
         if (!this.projects.has(root)) this.projects.set(root, new Project(root, this.log, () => this.update()));
       }
@@ -304,14 +307,33 @@ export class Projects implements vscode.Disposable {
     this.update();
   }
 
-  /** The project whose root is the nearest ancestor of file, if any. */
+  /** The project whose root is the nearest ancestor of file, if any: one the
+   * workspace search found, or else the module above the file when it requires
+   * collage — a folder opened below its module, or a workspace with more go.mod
+   * files than the search reads. */
   async forFile(file: string): Promise<Project | undefined> {
     const projects = await this.all();
     let best: Project | undefined;
     for (const p of projects) {
       if ((file === p.root || file.startsWith(p.root + path.sep)) && (!best || p.root.length > best.root.length)) best = p;
     }
-    return best;
+    if (best || !path.isAbsolute(file)) return best;
+    const dir = path.dirname(file);
+    let root = this.outside.get(dir);
+    if (root === undefined) {
+      root = (await moduleRootOf(file)) ?? null;
+      this.outside.set(dir, root);
+    }
+    if (root === null) return undefined;
+    let found = this.projects.get(root);
+    if (!found) {
+      found = new Project(root, this.log, () => this.update());
+      this.projects.set(root, found);
+      this.log.appendLine(`[${root}] found from ${file}, outside what the workspace search found`);
+      void found.refresh();
+      this.update();
+    }
+    return found;
   }
 
   private update(): void {

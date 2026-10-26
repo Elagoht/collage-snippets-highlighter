@@ -71,7 +71,9 @@ func main() {
 		panic(err)
 	}
 	vote := collage.NewAction("vote").WithPath("en", "/blog/{slug}/vote").WithMethods("POST").
-		WithHandler(func(context.Context, *collage.RenderContext) (*collage.ActionResult, error) { return nil, nil }).Build()
+		WithHandler(func(_ context.Context, rc *collage.RenderContext) (*collage.ActionResult, error) {
+			return collage.SeeOtherPage(rc, "post", map[string]string{"slug": "x"})
+		}).Build()
 	if err := app.RegisterAction(vote); err != nil {
 		panic(err)
 	}
@@ -134,7 +136,8 @@ mkdirSync(plain, { recursive: true });
 writeFileSync(join(plain, "page.html"), `<main>{{ }}</main>\n`);
 
 const executable = process.env.VSCODE_EXECUTABLE ?? "/Applications/Visual Studio Code.app/Contents/MacOS/Code";
-for (const [workspace, expect] of [[project, "collage"], [plain, "plain"]]) {
+// A folder opened below the module: the workspace holds no go.mod.
+for (const [workspace, expect] of [[project, "collage"], [plain, "plain"], [join(project, "components"), "subfolder"]]) {
   await runTests({
     vscodeExecutablePath: executable,
     extensionDevelopmentPath: root,
@@ -144,4 +147,4 @@ for (const [workspace, expect] of [[project, "collage"], [plain, "plain"]]) {
     extensionTestsEnv: { EXPECT: expect },
   });
 }
-console.log("integration: both workspaces passed");
+console.log("integration: every workspace passed");

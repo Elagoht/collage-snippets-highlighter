@@ -48,3 +48,17 @@ test("Go files read once: embedded fields when asked, NewInlineFragment's consta
   assert.equal(scan.uses.has(join(root, "a/b.go")), false);
   assert.deepEqual([...(await scanGo(root, false)).embedded], []);
 });
+
+test("moduleRootOf: the nearest go.mod above a file, when it requires collage", async () => {
+  const { moduleRootOf } = require("../out/src/gofiles.js");
+  const root = project({
+    "go.mod": "module site\n\ngo 1.26\n\nrequire (\n\tgithub.com/Elagoht/collage v0.76.0\n)\n",
+    "fragments/layouts/master.go": "package layouts\n",
+    "tools/gen/go.mod": "module gen\n\ngo 1.26\n",
+    "tools/gen/main.go": "package main\n",
+  });
+  assert.equal(await moduleRootOf(join(root, "fragments/layouts/master.go")), root);
+  assert.equal(await moduleRootOf(join(root, "main.go")), root);
+  assert.equal(await moduleRootOf(join(root, "tools/gen/main.go")), undefined, "a module of its own that does not use collage");
+  assert.equal(await moduleRootOf(join(tmpdir(), "nowhere", "x.go")), undefined);
+});

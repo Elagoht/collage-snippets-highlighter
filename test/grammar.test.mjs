@@ -40,6 +40,9 @@ test("collage functions are coloured apart from Go's builtins and from plugins'"
   assert.equal(scopeOf(`{{slot "content"}}`, "slot"), "support.function.collage.core");
   assert.equal(scopeOf(`{{pageURL "home"}}`, "pageURL"), "support.function.collage.core");
   assert.equal(scopeOf(`{{asset "/static/app.css"}}`, "asset"), "support.function.collage.core");
+  assert.equal(scopeOf(`{{.Body | truncate 80}}`, "truncate"), "support.function.collage.core");
+  assert.equal(scopeOf(`{{range seq 3}}`, "seq"), "support.function.collage.core");
+  assert.equal(scopeOf(`<a href="{{withQuery "page" 2}}">`, "withQuery"), "support.function.collage.core");
   assert.equal(scopeOf(`{{t "nav.home"}}`, "t"), "support.function.collage.plugin");
   assert.equal(scopeOf(`{{if eq .A .B}}`, "eq"), "support.function.builtin.collage-template");
   assert.equal(scopeOf(`{{if eq .A .B}}`, "if"), "keyword.control.collage-template");

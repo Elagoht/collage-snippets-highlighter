@@ -36,8 +36,9 @@ type Form = "any" | "collage" | "method";
 /**
  * The calls whose arguments name a route, and the kind of each position. collage:
  * SeeOtherPage, GuardSeeOtherPage and URL take a page or document; a
- * RenderContext's and an App's URL, ActionURL and FragmentURL, App.Page and
- * App.PageURLs are methods. elagoht/session's RequireUserPage, RequirePage and
+ * RenderContext's and an App's URL, ActionURL and FragmentURL and App.PageURLs
+ * are methods. App.Page is not: Page is a common method name — a docs site's
+ * loaded.Page("intro") — and a warning there would be wrong. elagoht/session's RequireUserPage, RequirePage and
  * RequireGuestPage and elagoht/paginate's PathNamed are matched by their names
  * alone, which nothing else in collage's world has.
  */
@@ -48,7 +49,6 @@ const CALLS: { name: string; form: Form; kinds: (NameKind | undefined)[] }[] = [
   { name: "URL", form: "method", kinds: ["route", "locale"] },
   { name: "ActionURL", form: "method", kinds: ["action", "locale"] },
   { name: "FragmentURL", form: "method", kinds: ["fragmentPage", "fragment", "locale"] },
-  { name: "Page", form: "method", kinds: ["page"] },
   { name: "PageURLs", form: "method", kinds: [undefined, "page"] },
   { name: "RequireUserPage", form: "any", kinds: ["route"] },
   { name: "RequirePage", form: "any", kinds: [undefined, "route"] },

@@ -38,7 +38,6 @@ func a(ctx context.Context, rc *collage.RenderContext, app *collage.App) {
 	rc.ActionURL("logout", nil)
 	app.ActionURL("logout", "en", nil)
 	app.FragmentURL("post", "comments", "en", nil)
-	app.Page("login")
 	app.PageURLs(ctx, "post")
 }`;
   assert.deepEqual(kinds(go), [
@@ -54,7 +53,6 @@ func a(ctx context.Context, rc *collage.RenderContext, app *collage.App) {
     ["FragmentURL", "fragmentPage", "post"],
     ["FragmentURL", "fragment", "comments"],
     ["FragmentURL", "locale", "en"],
-    ["Page", "page", "login"],
     ["PageURLs", "page", "post"],
   ]);
 });
@@ -118,7 +116,7 @@ test("the cursor in a name, while it is typed", () => {
 test("the names offered in each position", () => {
   const arg = (go) => goNameArgs(go)[0];
   assert.deepEqual(labels(goNamesFor(inspection, arg(`collage.SeeOtherPage(rc, "", nil)`))), ["post", "login", "feed"]);
-  assert.deepEqual(labels(goNamesFor(inspection, arg(`app.Page("")`))), ["post", "login"], "pages, not documents");
+  assert.deepEqual(labels(goNamesFor(inspection, goNameArgs(`app.PageURLs(ctx, "")`)[0])), ["post", "login"], "pages, not documents");
   assert.deepEqual(labels(goNamesFor(inspection, arg(`rc.ActionURL("", nil)`))), ["logout"]);
   assert.deepEqual(labels(goNamesFor(inspection, goNameArgs(`app.URL("post", "", nil)`)[1])), ["en", "tr"]);
   assert.deepEqual(labels(goNamesFor(inspection, arg(`app.FragmentURL("", "", "", nil)`))), ["post"]);
@@ -130,7 +128,9 @@ test("a name the application does not have", () => {
   assert.equal(unknownGoName(inspection, arg(`collage.SeeOtherPage(rc, "posts", nil)`)), 'No page or document named "posts".');
   assert.equal(unknownGoName(inspection, arg(`session.RequireUserPage("signin")`)), 'No page or document named "signin".');
   assert.equal(unknownGoName(inspection, arg(`rc.ActionURL("vote", nil)`)), 'No action named "vote".');
-  assert.equal(unknownGoName(inspection, arg(`app.Page("feed")`)), 'No page named "feed".');
+  assert.equal(unknownGoName(inspection, arg(`app.PageURLs(ctx, "feed")`)), 'No page named "feed".');
+  // A Page method is everywhere — a docs site's loaded.Page("intro") — and App.Page is not matched.
+  assert.deepEqual(goNameArgs(`loaded.Page("intro")`), []);
   assert.equal(unknownGoName(inspection, arg(`collage.SeeOtherPage(rc, "post", nil)`)), undefined);
   assert.equal(unknownGoName(inspection, arg(`collage.SeeOtherPage(rc, "", nil)`)), undefined, "empty: still being typed");
   assert.equal(unknownGoName(inspection, goNameArgs('collage.SeeOtherPage(rc, "pos\n')[0]), undefined, "unterminated");

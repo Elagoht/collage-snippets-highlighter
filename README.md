@@ -205,7 +205,7 @@ and in Go, where a string argument names a page, document or action:
 | `rc.URL("…"`, `app.URL("…", "…"` | pages and documents, then (App's) the locale |
 | `rc.ActionURL("…"`, `app.ActionURL("…", "…"` | actions, then (App's) the locale |
 | `app.FragmentURL("…", "…", "…"` | pages with fragment paths, their fragments, the locale |
-| `app.Page("…"`, `app.PageURLs(ctx, "…"` | pages |
+| `app.PageURLs(ctx, "…"` | pages |
 | `session.RequireUserPage("…"`, `session.RequirePage(key, "…"`, `session.RequireGuestPage("…"` | pages and documents |
 | `paginate.PathNamed(rc, "…", "…"` | pages and documents |
 
@@ -228,7 +228,7 @@ under the template root the inspection reports, and, before one has succeeded or
 while the application cannot start, under `templates` and then anywhere in the
 project, with `.html` added to a path written without it. A folder opened below
 its module still finds the module: the nearest `go.mod` above the file, when it
-requires collage.
+requires collage — and that module is inspected like any other, its `main` run.
 
 Running the application's `main` builds the application without serving it. A
 program that connects to a database while it builds would do so here too; turn it

@@ -559,7 +559,8 @@ class TemplateDefinition implements vscode.DefinitionProvider {
     if (!p) return undefined;
     const project = await this.projects.forFile(doc.fileName);
     if (!project) return undefined;
-    const files = await findTemplate(project.root, project.templateDir, p.value, project.inspection?.templateExtension ?? ".html");
+    const inspection = project.inspection;
+    const files = await findTemplate(project.root, project.templateDir, p.value, inspection?.templateExtension ?? ".html", !inspection);
     if (files.length === 0) return undefined;
     // The whole path is what is underlined, not the word under the pointer.
     const origin = new vscode.Range(doc.positionAt(p.start - 1), doc.positionAt(p.end + 1));

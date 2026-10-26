@@ -97,6 +97,8 @@ test("findTemplate: under the template directory, or wherever under the project 
   assert.deepEqual(await findTemplate(root, join(root, "templates"), "layouts/master.html", ".html"), [join(root, "web/views/layouts/master.html")]);
   assert.deepEqual(await findTemplate(root, join(root, "templates"), "layouts/master", ".html"), [join(root, "web/views/layouts/master.html")], "the extension added");
   assert.deepEqual(await findTemplate(root, join(root, "templates"), "layouts/missing.html", ".html"), []);
+  // Once an inspection has said where the templates are, a copy elsewhere is not the one.
+  assert.deepEqual(await findTemplate(root, join(root, "templates"), "layouts/master.html", ".html", false), [], "no search when the directory is known");
   mkdirSync(join(root, "templates/layouts"), { recursive: true });
   writeFileSync(join(root, "templates/layouts/master.html"), "");
   assert.deepEqual(await findTemplate(root, join(root, "templates"), "layouts/master.html", ".html"), [join(root, "templates/layouts/master.html")], "the template directory first, alone");

@@ -4,7 +4,7 @@
 
 - **Page, document and action names in Go**: the name argument of
   `collage.SeeOtherPage`, `collage.GuardSeeOtherPage`, `collage.URL`, a
-  RenderContext's or App's `URL`, `ActionURL` and `FragmentURL`, `App.Page`,
+  RenderContext's or App's `URL`, `ActionURL` and `FragmentURL`,
   `App.PageURLs`, elagoht/session's `RequireUserPage`, `RequirePage` and
   `RequireGuestPage`, and elagoht/paginate's `PathNamed` completes with the
   application's names, as `{{pageURL "…"}}` does, and a name it does not have is
@@ -14,7 +14,8 @@
   project from the file; a `Config.Template.Root` other than `templates` works
   before an inspection has succeeded, or while the application cannot start; a
   path without its extension gets `.html`; and a path held in a const or variable
-  of the file is linked where it is written.
+  of the file is linked where it is written. A module found from the file is
+  inspected like any other.
 - **collage's new template built-ins** are completed, described and coloured:
   `json`, `pre`, `add`, `sub`, `mul`, `div`, `mod`, `min`, `max`, `addf`, `subf`,
   `mulf`, `divf`, `withQuery`, `pathEscape`, `trim`, `replace`, `contains`,

@@ -76,11 +76,13 @@ export async function resolveTemplate(dir: string, value: string, ext: string): 
  * when it is there; otherwise under whichever directory of the project it is
  * found — Config.Template.Root before an inspection has said what it is, or
  * when the application cannot start to say it. Every match, nearest first;
- * none when there is none.
+ * none when there is none. Without search, only the template directory: once
+ * an inspection has said where it is, a copy elsewhere is not the template.
  */
-export async function findTemplate(root: string, templateDir: string, value: string, ext: string): Promise<string[]> {
+export async function findTemplate(root: string, templateDir: string, value: string, ext: string, search = true): Promise<string[]> {
   const direct = await resolveTemplate(templateDir, value, ext);
   if (direct) return [direct];
+  if (!search) return [];
   const out: string[] = [];
   const queue: { dir: string; depth: number }[] = [{ dir: root, depth: 0 }];
   for (let seen = 0; queue.length && seen < 2000; seen++) {

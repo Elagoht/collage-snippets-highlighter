@@ -560,7 +560,7 @@ class TemplateDefinition implements vscode.DefinitionProvider {
     const project = await this.projects.forFile(doc.fileName);
     if (!project) return undefined;
     const inspection = project.inspection;
-    const files = await findTemplate(project.root, project.templateDir, p.value, inspection?.templateExtension ?? ".html", !inspection);
+    const files = await findTemplate(project.root, project.templateDir, p.value, inspection?.templateExtension ?? ".html", !inspection, project.templateSearch);
     if (files.length === 0) return undefined;
     // The whole path is what is underlined, not the word under the pointer.
     const origin = new vscode.Range(doc.positionAt(p.start - 1), doc.positionAt(p.end + 1));
@@ -681,6 +681,8 @@ class Diagnostics {
   /** A page, document or action name in Go that the application does not have:
    * `collage.SeeOtherPage(rc, "posts", …)` where only "post" is registered. */
   private async checkNames(doc: vscode.TextDocument): Promise<void> {
+    // The text may change while the project is looked up: then a newer check runs.
+    const version = doc.version;
     const mode = vscode.workspace.getConfiguration("collage").get<string>("diagnostics", "warning");
     const project = await this.projects.forFile(doc.fileName);
     const inspection = project?.inspection;
@@ -699,7 +701,7 @@ class Diagnostics {
       d.source = "collage";
       out.push(d);
     }
-    this.names.set(doc.uri, out);
+    if (doc.version === version) this.names.set(doc.uri, out);
   }
 }
 

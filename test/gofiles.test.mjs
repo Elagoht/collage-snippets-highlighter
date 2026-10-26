@@ -62,3 +62,16 @@ test("moduleRootOf: the nearest go.mod above a file, when it requires collage", 
   assert.equal(await moduleRootOf(join(root, "tools/gen/main.go")), undefined, "a module of its own that does not use collage");
   assert.equal(await moduleRootOf(join(tmpdir(), "nowhere", "x.go")), undefined);
 });
+
+test("mayAdopt: only a file in the workspace, and never one in the module cache or GOROOT", () => {
+  const { mayAdopt } = require("../out/src/gofiles.js");
+  const folders = ["/w/site/store", "/w/other"];
+  const excluded = ["/home/u/go/pkg/mod", "/usr/local/go"];
+  assert.equal(mayAdopt("/w/site/store/db.go", folders, excluded), true, "a folder opened below its module");
+  assert.equal(mayAdopt("/w/other/a/b.go", folders, excluded), true);
+  assert.equal(mayAdopt("/w/site/main.go", folders, excluded), false, "outside every workspace folder");
+  assert.equal(mayAdopt("/home/u/go/pkg/mod/github.com/!elagoht/collage@v0.76.0/pkg/collage/app.go", folders, excluded), false, "F12 into the module cache");
+  assert.equal(mayAdopt("/home/u/go/pkg/mod/x/y.go", ["/home/u"], excluded), false, "the module cache, even inside a workspace folder");
+  assert.equal(mayAdopt("/usr/local/go/src/net/http/server.go", ["/usr/local"], excluded), false, "GOROOT");
+  assert.equal(mayAdopt("/w/otherness/x.go", folders, excluded), false, "a sibling whose name starts the same");
+});

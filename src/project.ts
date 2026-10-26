@@ -6,7 +6,7 @@ import * as cp from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { findTemplateDir, listsEmbedded, moduleRootOf, requiresCollage, scanGo } from "./gofiles";
+import { findTemplateDir, listsEmbedded, mayAdopt, moduleRootOf, requiresCollage, scanGo } from "./gofiles";
 import { Rerun } from "./rerun";
 
 export interface Inspection {
@@ -74,6 +74,9 @@ export class Project {
   inlineUses: Map<string, Map<string, string[]>> = new Map();
   /** The directory the fragments' template paths are relative to. */
   templateDir: string;
+  /** Where a template path not under templateDir was found in the project,
+   * by path and extension; cleared on every refresh. */
+  readonly templateSearch = new Map<string, string[]>();
   error: string | undefined;
   private readonly runs = new Rerun();
   /** How many inspections have succeeded: for the integration tests. */
@@ -122,6 +125,7 @@ export class Project {
   }
 
   private async load(): Promise<void> {
+    this.templateSearch.clear();
     const cfg = vscode.workspace.getConfiguration("collage");
     const go = cfg.get<string>("goCommand", "go");
     const [manifests, inspection] = await Promise.all([
@@ -224,6 +228,23 @@ function parseStream(text: string): { Path: string; Dir?: string; Version?: stri
   return out;
 }
 
+/** GOMODCACHE and GOROOT, asked of go once: what is under them is never a project. */
+let goDirsAsked: Promise<string[]> | undefined;
+function goDirs(): Promise<string[]> {
+  goDirsAsked ??= (async () => {
+    const go = vscode.workspace.getConfiguration("collage").get<string>("goCommand", "go");
+    const fallback = [path.join(os.homedir(), "go", "pkg", "mod")];
+    try {
+      const out = await exec(go, ["env", "GOMODCACHE", "GOROOT"], os.homedir(), 15_000);
+      const dirs = out.split("\n").map((l) => l.trim()).filter(Boolean);
+      return dirs.length ? dirs : fallback;
+    } catch {
+      return fallback;
+    }
+  })();
+  return goDirsAsked;
+}
+
 /** Numbers the inspection builds, so two projects never build into one file. */
 let builds = 0;
 
@@ -318,6 +339,8 @@ export class Projects implements vscode.Disposable {
       if ((file === p.root || file.startsWith(p.root + path.sep)) && (!best || p.root.length > best.root.length)) best = p;
     }
     if (best || !path.isAbsolute(file)) return best;
+    const folders = (vscode.workspace.workspaceFolders ?? []).filter((f) => f.uri.scheme === "file").map((f) => f.uri.fsPath);
+    if (!mayAdopt(file, folders, await goDirs())) return undefined;
     const dir = path.dirname(file);
     let root = this.outside.get(dir);
     if (root === undefined) {

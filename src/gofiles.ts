@@ -103,3 +103,20 @@ export async function moduleRootOf(file: string): Promise<string | undefined> {
 export function requiresCollage(mod: string): boolean {
   return /github\.com\/Elagoht\/collage\s/.test(mod);
 }
+
+/** within is whether file is dir or below it. */
+function within(file: string, dir: string): boolean {
+  return file === dir || file.startsWith(dir.endsWith(path.sep) ? dir : dir + path.sep);
+}
+
+/**
+ * mayAdopt is whether the module above a file may be taken as a project the
+ * workspace search did not find: only for a file in one of the workspace's
+ * folders, and never one under the module cache or GOROOT — a file opened there
+ * by going to a definition belongs to a module the application depends on, whose
+ * go.mod requires collage too, and which is not to be built and run.
+ */
+export function mayAdopt(file: string, folders: string[], excluded: string[]): boolean {
+  if (excluded.some((dir) => dir && within(file, dir))) return false;
+  return folders.some((dir) => within(file, dir));
+}

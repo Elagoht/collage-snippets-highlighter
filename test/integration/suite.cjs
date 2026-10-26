@@ -29,8 +29,8 @@ async function run() {
   }
 
   if (process.env.EXPECT === "subfolder") {
-    // The module is above the workspace: found from the file, not by the search.
-    const main = await vscode.workspace.openTextDocument(path.join(folder, "..", "main.go"));
+    // The module is above the workspace: found from a file in it, not by the search.
+    const main = await vscode.workspace.openTextDocument(path.join(folder, "layout.go"));
     await vscode.window.showTextDocument(main);
     await ext.activate();
     const at = main.positionAt(main.getText().indexOf('"pages/post.html"') + 5);

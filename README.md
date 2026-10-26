@@ -210,7 +210,11 @@ and in Go, where a string argument names a page, document or action:
 | `paginate.PathNamed(rc, "…", "…"` | pages and documents |
 
 collage's own are recognised under whatever name the file imports it as;
-the plugins' by their function names.
+the plugins' through the name the file imports them as. A method — `URL`,
+`ActionURL`, `FragmentURL`, `PageURLs` — is completed on any receiver, but a name
+it does not know is reported only when the receiver is declared in the file as
+collage's `App`, `RenderContext` or `Host` (`rc *collage.RenderContext`,
+`app, err := collage.New(…)`): another package's `URL` takes something else.
 
 It warns about a page, a fragment or a file that does not exist — not about a slot:
 a template calling `{{slot "x"}}` declares `x`, and one nothing fills renders empty.
@@ -227,8 +231,10 @@ or variable of the same file and passed to `NewFragment`. The file is looked for
 under the template root the inspection reports, and, before one has succeeded or
 while the application cannot start, under `templates` and then anywhere in the
 project, with `.html` added to a path written without it. A folder opened below
-its module still finds the module: the nearest `go.mod` above the file, when it
-requires collage — and that module is inspected like any other, its `main` run.
+its module still finds the module: for a file in the workspace, the nearest
+`go.mod` above it, when it requires collage — and that module is inspected like
+any other, its `main` run. A file outside the workspace, or under the module
+cache or GOROOT (where going to a definition leads), never makes a project.
 
 Running the application's `main` builds the application without serving it. A
 program that connects to a database while it builds would do so here too; turn it

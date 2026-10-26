@@ -103,3 +103,19 @@ test("findTemplate: under the template directory, or wherever under the project 
   writeFileSync(join(root, "templates/layouts/master.html"), "");
   assert.deepEqual(await findTemplate(root, join(root, "templates"), "layouts/master.html", ".html"), [join(root, "templates/layouts/master.html")], "the template directory first, alone");
 });
+
+test("findTemplate's project search is kept in a cache until it is cleared", async () => {
+  const { findTemplate } = require("../out/src/templatelinks.js");
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "collage-cache-")));
+  const cache = new Map();
+  assert.deepEqual(await findTemplate(root, join(root, "templates"), "a.html", ".html", true, cache), []);
+  mkdirSync(join(root, "views"));
+  writeFileSync(join(root, "views/a.html"), "");
+  assert.deepEqual(await findTemplate(root, join(root, "templates"), "a.html", ".html", true, cache), [], "the cached answer");
+  cache.clear();
+  assert.deepEqual(await findTemplate(root, join(root, "templates"), "a.html", ".html", true, cache), [join(root, "views/a.html")]);
+  // The template directory itself is read every time.
+  mkdirSync(join(root, "templates"));
+  writeFileSync(join(root, "templates/b.html"), "");
+  assert.deepEqual(await findTemplate(root, join(root, "templates"), "b.html", ".html", true, cache), [join(root, "templates/b.html")]);
+});

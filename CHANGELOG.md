@@ -8,14 +8,18 @@
   `App.PageURLs`, elagoht/session's `RequireUserPage`, `RequirePage` and
   `RequireGuestPage`, and elagoht/paginate's `PathNamed` completes with the
   application's names, as `{{pageURL "…"}}` does, and a name it does not have is
-  reported — unless the file declares it.
+  reported — unless the file declares it, or the call may be another package's:
+  a method's receiver has to be declared in the file as collage's `App`,
+  `RenderContext` or `Host`, and a function has to be called through collage's,
+  session's or paginate's import.
 - **A template path in Go opens its file in more places**: a folder opened below
   its module, or a workspace with more than 50 `go.mod` files, now finds the
   project from the file; a `Config.Template.Root` other than `templates` works
   before an inspection has succeeded, or while the application cannot start; a
   path without its extension gets `.html`; and a path held in a const or variable
-  of the file is linked where it is written. A module found from the file is
-  inspected like any other.
+  of the file is linked where it is written. A module found from a file in the
+  workspace is inspected like any other; one under the module cache or GOROOT
+  never is.
 - **collage's new template built-ins** are completed, described and coloured:
   `json`, `pre`, `add`, `sub`, `mul`, `div`, `mod`, `min`, `max`, `addf`, `subf`,
   `mulf`, `divf`, `withQuery`, `pathEscape`, `trim`, `replace`, `contains`,

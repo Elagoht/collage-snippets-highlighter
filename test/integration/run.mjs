@@ -103,6 +103,8 @@ writeFileSync(join(project, "templates/admin/pages/post.html"), "<p>{{.Nope}}</p
 for (const dir of ["components", "auth-layout"]) mkdirSync(join(project, dir), { recursive: true });
 writeFileSync(join(project, "components/card.go"), "// Package components is the site's parts.\npackage components\n");
 writeFileSync(join(project, "components/new.go"), "");
+// A fragment with its template in a file, for the folder opened below the module.
+writeFileSync(join(project, "components/layout.go"), 'package components\n\nimport "github.com/Elagoht/collage/pkg/collage"\n\nfunc Layout() *collage.Fragment {\n\treturn collage.NewFragment("layout", "pages/post.html").Build()\n}\n');
 writeFileSync(join(project, "auth-layout/new.go"), "");
 // Inline HTML, its arguments on lines of their own: edited as HTML is.
 writeFileSync(join(project, "components/inline.go"), [

@@ -78,11 +78,16 @@ export async function resolveTemplate(dir: string, value: string, ext: string): 
  * when the application cannot start to say it. Every match, nearest first;
  * none when there is none. Without search, only the template directory: once
  * an inspection has said where it is, a copy elsewhere is not the template.
+ * The search's answer is kept in cache, when given, until the caller clears it:
+ * Cmd/Ctrl+hover asks on every move of the pointer.
  */
-export async function findTemplate(root: string, templateDir: string, value: string, ext: string, search = true): Promise<string[]> {
+export async function findTemplate(root: string, templateDir: string, value: string, ext: string, search = true, cache?: Map<string, string[]>): Promise<string[]> {
   const direct = await resolveTemplate(templateDir, value, ext);
   if (direct) return [direct];
   if (!search) return [];
+  const key = `${value}\0${ext}`;
+  const cached = cache?.get(key);
+  if (cached) return cached;
   const out: string[] = [];
   const queue: { dir: string; depth: number }[] = [{ dir: root, depth: 0 }];
   for (let seen = 0; queue.length && seen < 2000; seen++) {
@@ -102,5 +107,6 @@ export async function findTemplate(root: string, templateDir: string, value: str
       if (e.isDirectory() && !e.name.startsWith(".") && e.name !== "vendor" && e.name !== "node_modules") queue.push({ dir: path.join(dir, e.name), depth: depth + 1 });
     }
   }
+  cache?.set(key, out);
   return out;
 }

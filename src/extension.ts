@@ -18,6 +18,7 @@ import { completeAt, dataOf, fragmentsNamed, fragmentsOfTemplate, inComment, typ
 import { inlineTemplates, inlineUses } from "./embedded";
 import { slotBindingAt, slotBindings, templateByName, templateSlots, type Parent } from "./goslots";
 import { resolveTemplate, templatePathAt } from "./templatelinks";
+import { declaredNames, goNameArgAt, goNameArgs, goNamesFor, unknownGoName } from "./gonames";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -52,6 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const projects = new Projects();
   const diagnostics = vscode.languages.createDiagnosticCollection("collage");
   const slotDiagnostics = vscode.languages.createDiagnosticCollection("collage-slots");
+  const nameDiagnostics = vscode.languages.createDiagnosticCollection("collage-go-names");
   const schema = new SchemaProvider(projects);
   const virtual = new VirtualDocuments();
 
@@ -59,8 +61,10 @@ export function activate(context: vscode.ExtensionContext): void {
     projects,
     diagnostics,
     slotDiagnostics,
+    nameDiagnostics,
     vscode.languages.registerCompletionItemProvider("html", new Completion(projects), '"', "{", " ", "(", "|", "-", "/", ".", "$"),
     vscode.languages.registerCompletionItemProvider("go", new SlotNames(projects, virtual), '"'),
+    vscode.languages.registerCompletionItemProvider("go", new GoNames(projects, virtual), '"'),
     vscode.languages.registerCompletionItemProvider("go", new ManifestSnippets(projects, "go", virtual)),
     vscode.languages.registerCompletionItemProvider("go", new FunctionSnippets(projects, virtual)),
     vscode.languages.registerHoverProvider("html", new Hover(projects)),
@@ -79,13 +83,14 @@ export function activate(context: vscode.ExtensionContext): void {
 
   registerInlineHTML(context, virtual);
 
-  const check = new Diagnostics(projects, diagnostics, slotDiagnostics, virtual);
+  const check = new Diagnostics(projects, diagnostics, slotDiagnostics, nameDiagnostics, virtual);
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((d) => check.schedule(d)),
     vscode.workspace.onDidChangeTextDocument((e) => check.schedule(e.document)),
     vscode.workspace.onDidCloseTextDocument((d) => {
       diagnostics.delete(d.uri);
       slotDiagnostics.delete(d.uri);
+      nameDiagnostics.delete(d.uri);
     }),
     projects.onDidChange(() => {
       vscode.workspace.textDocuments.forEach((d) => check.schedule(d));
@@ -384,6 +389,30 @@ class SlotNames implements vscode.CompletionItemProvider {
   }
 }
 
+/** `collage.SeeOtherPage(rc, "…"`, `session.RequireUserPage("…"`: the pages,
+ * documents or actions the application registers, as in {{pageURL "…"}}. */
+class GoNames implements vscode.CompletionItemProvider {
+  constructor(private readonly projects: Projects, private readonly virtual: VirtualDocuments) {}
+
+  async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.CompletionItem[] | undefined> {
+    if (this.virtual.regionAt(doc, pos)) return undefined; // HTML there, not Go
+    const { enabled, project } = await projectFor(this.projects, doc);
+    if (!enabled || !project?.inspection) return undefined;
+    const arg = goNameArgAt(doc.getText(), doc.offsetAt(pos));
+    if (!arg) return undefined;
+    const known = goNamesFor(project.inspection, arg);
+    if (!known) return undefined;
+    const range = new vscode.Range(doc.positionAt(arg.start + 1), doc.positionAt(arg.closed ? arg.end - 1 : arg.end));
+    return known.names.map((n, i) => {
+      const item = new vscode.CompletionItem({ label: n.label, description: n.detail }, vscode.CompletionItemKind.Value);
+      item.range = range;
+      item.sortText = String(i).padStart(5, "0");
+      item.filterText = n.label;
+      return item;
+    });
+  }
+}
+
 /** Snippets from manifests of plugins the extension's own snippets do not cover. */
 function manifestSnippetItems(project: Project | undefined, language: "html" | "go"): vscode.CompletionItem[] {
   const out: vscode.CompletionItem[] = [];
@@ -549,6 +578,7 @@ class Diagnostics {
     private readonly projects: Projects,
     private readonly collection: vscode.DiagnosticCollection,
     private readonly slots: vscode.DiagnosticCollection,
+    private readonly names: vscode.DiagnosticCollection,
     private readonly virtual: VirtualDocuments,
   ) {}
 
@@ -561,6 +591,7 @@ class Diagnostics {
         if (this.virtual.regionsOf(doc).length > 0) void this.virtual.sync(doc);
         else this.collection.delete(doc.uri);
         void this.checkSlots(doc);
+        void this.checkNames(doc);
         // Unsaved Go code pauses the field warnings of every template.
         for (const html of vscode.workspace.textDocuments) if (html.languageId === "html" && html.uri.scheme === "file") this.schedule(html);
       }, 400));
@@ -641,6 +672,30 @@ class Diagnostics {
       out.push(d);
     }
     if (doc.version === version) this.slots.set(doc.uri, out);
+  }
+
+  /** A page, document or action name in Go that the application does not have:
+   * `collage.SeeOtherPage(rc, "posts", …)` where only "post" is registered. */
+  private async checkNames(doc: vscode.TextDocument): Promise<void> {
+    const mode = vscode.workspace.getConfiguration("collage").get<string>("diagnostics", "warning");
+    const project = await this.projects.forFile(doc.fileName);
+    const inspection = project?.inspection;
+    if (mode === "off" || !inspection) {
+      this.names.delete(doc.uri);
+      return;
+    }
+    const severity = mode === "error" ? vscode.DiagnosticSeverity.Error : mode === "information" ? vscode.DiagnosticSeverity.Information : vscode.DiagnosticSeverity.Warning;
+    const text = doc.getText();
+    const declared = declaredNames(text);
+    const out: vscode.Diagnostic[] = [];
+    for (const arg of goNameArgs(text)) {
+      const message = unknownGoName(inspection, arg, declared);
+      if (!message) continue;
+      const d = new vscode.Diagnostic(new vscode.Range(doc.positionAt(arg.start), doc.positionAt(arg.end)), message, severity);
+      d.source = "collage";
+      out.push(d);
+    }
+    this.names.set(doc.uri, out);
   }
 }
 

@@ -40,7 +40,7 @@ export function namesFor(inspection: Inspection, templateName: string | undefine
   return undefined;
 }
 
-function routes(inspection: Inspection): { what: string; names: Name[] } {
+export function routes(inspection: Inspection): { what: string; names: Name[] } {
   const names: Name[] = [];
   for (const p of inspection.pages) names.push({ label: p.name, detail: "page " + Object.values(p.paths).join(", ") });
   for (const d of inspection.documents) names.push({ label: d.name, detail: "document " + Object.values(d.paths).join(", ") });
@@ -55,7 +55,12 @@ function params(inspection: Inspection, route: string, index: number): { what: s
   return { what: `parameter of ${route}`, names: (found.params ?? []).map((p) => ({ label: p, detail: `{${p}}` })) };
 }
 
-function actions(inspection: Inspection): { what: string; names: Name[] } {
+/** The pages alone: what App.Page and App.PageURLs look a name up among. */
+export function pages(inspection: Inspection): { what: string; names: Name[] } {
+  return { what: "page", names: inspection.pages.map((p) => ({ label: p.name, detail: "page " + Object.values(p.paths).join(", ") })) };
+}
+
+export function actions(inspection: Inspection): { what: string; names: Name[] } {
   return { what: "action", names: (inspection.actions ?? []).map((a) => ({ label: a.name, detail: `${a.methods.join(", ")} ${Object.values(a.paths).join(", ")}` })) };
 }
 
@@ -69,11 +74,11 @@ function actionParams(inspection: Inspection, action: string, index: number): { 
   return { what: `parameter of ${action}`, names: [...names].map((p) => ({ label: p, detail: `{${p}}` })) };
 }
 
-function locales(inspection: Inspection): { what: string; names: Name[] } {
+export function locales(inspection: Inspection): { what: string; names: Name[] } {
   return { what: "locale", names: inspection.locales.map((l) => ({ label: l, detail: l === inspection.defaultLocale ? "default locale" : "locale" })) };
 }
 
-function fragmentURL(inspection: Inspection, page: string, index: number, fragment: string): { what: string; names: Name[] } | undefined {
+export function fragmentURL(inspection: Inspection, page: string, index: number, fragment: string): { what: string; names: Name[] } | undefined {
   const withPaths = inspection.pages.filter((p) => p.fragmentPaths?.length);
   if (index === 0) return { what: "page with fragment paths", names: withPaths.map((p) => ({ label: p.name, detail: `${p.fragmentPaths!.length} fragment path(s)` })) };
   const found = withPaths.find((p) => p.name === page);

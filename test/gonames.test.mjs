@@ -127,14 +127,14 @@ test("a name the application does not have", () => {
   const arg = (go) => goNameArgs(go)[0];
   assert.equal(unknownGoName(inspection, arg(`collage.SeeOtherPage(rc, "posts", nil)`)), 'No page or document named "posts".');
   assert.equal(unknownGoName(inspection, arg(`session.RequireUserPage("signin")`)), 'No page or document named "signin".');
-  assert.equal(unknownGoName(inspection, arg(`rc.ActionURL("vote", nil)`)), 'No action named "vote".');
-  assert.equal(unknownGoName(inspection, arg(`app.PageURLs(ctx, "feed")`)), 'No page named "feed".');
+  assert.equal(unknownGoName(inspection, arg(`func h(_ context.Context, rc *collage.RenderContext) { rc.ActionURL("vote", nil) }`)), 'No action named "vote".');
+  assert.equal(unknownGoName(inspection, arg(`func r(app *collage.App) { app.PageURLs(ctx, "feed") }`)), 'No page named "feed".');
   // A Page method is everywhere — a docs site's loaded.Page("intro") — and App.Page is not matched.
   assert.deepEqual(goNameArgs(`loaded.Page("intro")`), []);
   assert.equal(unknownGoName(inspection, arg(`collage.SeeOtherPage(rc, "post", nil)`)), undefined);
   assert.equal(unknownGoName(inspection, arg(`collage.SeeOtherPage(rc, "", nil)`)), undefined, "empty: still being typed");
   assert.equal(unknownGoName(inspection, goNameArgs('collage.SeeOtherPage(rc, "pos\n')[0]), undefined, "unterminated");
-  assert.equal(unknownGoName({ ...inspection, actions: [] }, arg(`rc.ActionURL("vote", nil)`)), undefined, "no actions known: nothing to check against");
+  assert.equal(unknownGoName({ ...inspection, actions: [] }, arg(`func h(rc *collage.RenderContext) { rc.ActionURL("vote", nil) }`)), undefined, "no actions known: nothing to check against");
   assert.equal(unknownGoName(inspection, arg(`collage.SeeOtherPage(rc, "signup", nil)`), new Set(["signup"])), undefined, "declared in the file being edited");
 });
 
@@ -144,4 +144,56 @@ collage.NewDocument("rss", "application/xml")
 collage.NewAction("vote")
 collage.NewFragment("card", "card.html")`;
   assert.deepEqual([...declaredNames(go)].sort(), ["rss", "signup", "vote"]);
+});
+
+// warnings are the messages a whole file gets.
+const warnings = (go) => goNameArgs(go).map((a) => unknownGoName(inspection, a)).filter(Boolean);
+
+test("no warning where the call may not be collage's", () => {
+  // gorilla/mux: a route's URL takes pairs of path variables.
+  assert.deepEqual(warnings('u, err := r.Get("article").URL("category", "tech")'), []);
+  // A storage bucket's or a CDN's URL takes a path.
+  assert.deepEqual(warnings('bucket.URL("images/x.png")'), []);
+  assert.deepEqual(warnings('cdn.URL("/static/app.css")'), []);
+  // Functions of the same name in another package.
+  assert.deepEqual(warnings('myauth.RequirePage("admin", "dashboard")'), []);
+  assert.deepEqual(warnings('other.SeeOtherPage(nil, "home", nil)'), []);
+  assert.deepEqual(warnings(`import (
+	"github.com/Elagoht/collage/pkg/collage"
+	session "example.com/myauth"
+)
+func g() { session.RequireUserPage("dashboard") }`), [], "session is another package here");
+  // A method whose receiver is not known to be collage's is still completed.
+  assert.equal(goNameArgs('bucket.URL("")')[0]?.kind, "route");
+});
+
+test("a warning where the call is collage's for certain", () => {
+  const go = `package actions
+
+import (
+	c "github.com/Elagoht/collage/pkg/collage"
+	auth "github.com/Elagoht/collage-session"
+	"github.com/Elagoht/collage-paginate"
+)
+
+func handler(ctx context.Context, rc *c.RenderContext) (*c.ActionResult, error) {
+	_, _ = rc.URL("posts", nil)
+	_, _ = paginate.PathNamed(rc, "posts", "post")
+	return c.SeeOtherPage(rc, "posts", nil)
+}
+
+func register(host c.Host) {
+	app, err := c.New(&c.Config{})
+	app.ActionURL("vote", "en", nil)
+	host.PageURLs(ctx, "feed")
+	c.NewFragment("x", "x.html").WithGuard(auth.RequireUserPage("signin"))
+}`;
+  assert.deepEqual(warnings(go), [
+    'No page or document named "posts".',
+    'No page or document named "posts".',
+    'No page or document named "posts".',
+    'No action named "vote".',
+    'No page named "feed".',
+    'No page or document named "signin".',
+  ]);
 });

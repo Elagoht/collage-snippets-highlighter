@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.25.0
+
+For elagoht/markdown v0.4.0.
+
+- **`{{markdown}}`**: elagoht/markdown's template function completes and has its
+  hover, and is coloured as a function.
+- **elagoht/markdown's configuration**: `extensions` lists the names the plugin
+  knows — table, strikethrough, linkify, taskList, footnote, mark, headingIDs,
+  headingAttributes, definitionList, typographer — and the removed `dir`,
+  `drafts` and `localeDirs` are no longer offered.
+
 ## 0.24.0
 
 For collage v0.77.0.

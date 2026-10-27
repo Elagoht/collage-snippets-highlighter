@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.26.0
+
+For collage v0.78.0, elagoht/session v0.7.0 and elagoht/i18n v0.4.0.
+
+- **`{{th}}`'s hover** says what i18n v0.4.0 does: each value is escaped for
+  where it lands, and an unsafe URL becomes `#ZgotmplZ`.
+- **elagoht/session's `domain`** says that a session is bound to the host it was
+  issued on.
+
 ## 0.25.0
 
 For elagoht/markdown v0.4.0.

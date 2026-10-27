@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.27.0
+
+For collage v0.79.0 and the plugin releases that followed it.
+
+- **New configuration keys** complete and are checked: `ipv6Prefix` in
+  elagoht/ratelimit and elagoht/fail2ban, `maxUnknownPerMinute` and `unknownTTL`
+  in elagoht/tenant, `maxRecipes` and `maxDiskBytes` in elagoht/opti-image, and
+  `trustIncoming` in elagoht/otel.
+
 ## 0.26.0
 
 For collage v0.78.0, elagoht/session v0.7.0 and elagoht/i18n v0.4.0.

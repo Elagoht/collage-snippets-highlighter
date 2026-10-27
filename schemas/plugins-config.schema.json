@@ -608,6 +608,10 @@
           "type": "boolean",
           "description": "default false: nothing happens in development"
         },
+        "ipv6Prefix": {
+          "type": "integer",
+          "description": "leading bits that name an IPv6 client, default 64 (32 to 128)"
+        },
         "jails": {
           "type": "object",
           "description": "overrides and app jails, by name",
@@ -1369,9 +1373,17 @@
             "5m"
           ]
         },
+        "maxDiskBytes": {
+          "type": "integer",
+          "description": "MaxDiskBytes caps the bytes of produced images kept in CacheDir, those an earlier process left there included. Past it the least recently used is removed, and made again when it is next asked for. Defaults to 1 GiB (1073741824); negative is an error. The recipe files are bounded by MaxRecipes, not by this."
+        },
         "maxPixels": {
           "type": "integer",
-          "description": "MaxPixels refuses an origin image with more pixels than this, before it is decoded. Defaults to 40 million; negative is an error. A small file can decode to an enormous bitmap — the decompression bomb — and the byte limit above does not see it."
+          "description": "MaxPixels refuses an image with more pixels than this, the source before it is decoded and the output before it is named. Defaults to 40 million; negative is an error. A small file can decode to an enormous bitmap — the decompression bomb — and the byte limit above does not see it; and an \u003cimg\u003e declaring width=\"50000\" height=\"50000\" would ask for a 10 GB bitmap from a 2x2 source. Such an \u003cimg\u003e is left as it is, with a warning. A side longer than 16384 pixels is refused the same way, whatever this says."
+        },
+        "maxRecipes": {
+          "type": "integer",
+          "description": "MaxRecipes caps how many images the plugin remembers how to make: one per source, size and format a rendered page named, in memory and as a \u003cname\u003e.json file in CacheDir. Past it the least recently rendered or served is forgotten, with its image, and its name is a 404 until a page names it again. Defaults to 10000; negative is an error. A page that puts a request's value into an \u003cimg\u003e mints a name per request, and without the cap every one is kept forever. A static build of a site with more distinct images than this loses the first ones — a warning says so; raise it for such a build."
         },
         "maxSourceBytes": {
           "type": "integer",
@@ -1426,6 +1438,15 @@
           "items": {
             "type": "string"
           }
+        },
+        "trustIncoming": {
+          "type": "string",
+          "description": "TrustIncoming says whose trace context is continued. \"\" (the default) continues it only on a request that came through one of the application's Server.TrustedProxies — so with none listed, no one's; \"always\" continues anyone's, for a service only other services reach; \"never\" continues no one's. A trace context that is not continued is recorded as a link on a new trace, and its baggage is dropped: a client must not decide what is sampled, nor plant the site's spans in a trace of its choosing.",
+          "enum": [
+            "",
+            "always",
+            "never"
+          ]
         }
       },
       "markdownDescription": "A collage plugin for OpenTelemetry tracing.\n\n[collage-otel](https://github.com/Elagoht/collage-otel)",
@@ -1451,6 +1472,10 @@
       "type": "object",
       "description": "A collage plugin that limits how fast one client can hit the site: a token bucket per client, per rule, answered with 429 once it is empty.",
       "properties": {
+        "ipv6Prefix": {
+          "type": "integer",
+          "description": "IPv6Prefix is how many leading bits of an IPv6 address name its client: every address in one such block shares a bucket. Default 64, the block one connection is usually handed. 48 makes a whole /48 (what a tunnel broker or a hosting provider hands out, free, as 65536 /64s) one client; 128 is one address. 32 to 128; IPv4 clients are always one address."
+        },
         "maxKeys": {
           "type": "integer",
           "description": "MaxKeys is the most clients each rule keeps a bucket for. Past it, an arbitrary bucket is dropped to make room, which bounds memory however many addresses a flood comes from. Default 100000."
@@ -1810,7 +1835,11 @@
         },
         "maxHosts": {
           "type": "integer",
-          "description": "MaxHosts bounds how many hosts' answers are kept, so a client sending random Host headers cannot grow memory or make Resolve run without end. Tenants and \"no tenant\" answers are kept apart, up to MaxHosts each, so hosts nobody serves never push a real tenant's answer out. Zero means 10000; a negative value is an error."
+          "description": "MaxHosts bounds how many hosts' answers are kept, so a client sending random Host headers cannot grow memory. Tenants and \"no tenant\" answers are kept apart, up to MaxHosts each, so hosts nobody serves never push a real tenant's answer out. Zero means 10000; a negative value is an error."
+        },
+        "maxUnknownPerMinute": {
+          "type": "integer",
+          "description": "MaxUnknownPerMinute bounds how many Resolve calls a minute may answer \"no tenant\" (or fail), so a client sending a new random Host header on every request cannot set the resolver's query rate. Once they are spent, a host with no answer held is answered 503 with a Retry-After, without calling Resolve, until the budget refills; a host whose tenant is held, even past its TTL, is still resolved. Zero means 600; a negative value is an error."
         },
         "tenants": {
           "type": "array",
@@ -1836,7 +1865,16 @@
         },
         "ttl": {
           "type": "string",
-          "description": "TTL is how long Resolve's answer for a host is kept, \"is no tenant\" included, written as a string: \"30s\". Zero means \"1m\".",
+          "description": "TTL is how long Resolve's answer that a host is a tenant's is kept, written as a string: \"30s\". Zero means \"1m\".",
+          "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
+          "examples": [
+            "30s",
+            "5m"
+          ]
+        },
+        "unknownTTL": {
+          "type": "string",
+          "description": "UnknownTTL is how long Resolve's answer that a host is no tenant's is kept, written as a string: \"30s\". Zero means \"1m\".",
           "pattern": "^(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+$",
           "examples": [
             "30s",

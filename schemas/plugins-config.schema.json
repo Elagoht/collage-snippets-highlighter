@@ -1049,21 +1049,25 @@
     },
     "elagoht/markdown": {
       "type": "object",
-      "description": "A collage plugin that makes a directory of Markdown files page data.",
+      "description": "A collage plugin that renders Markdown strings as HTML.",
       "properties": {
-        "dir": {
-          "type": "string",
-          "description": "Dir is the directory in FS whose *.md files are the documents: one file per document, named for its slug. Subdirectories are not read, so a translation can live in one. Default \".\"."
-        },
-        "drafts": {
-          "type": "boolean",
-          "description": "Drafts includes documents whose front matter says draft: true. Off, a draft is not listed, not built, and answers 404."
-        },
-        "localeDirs": {
-          "type": "object",
-          "description": "LocaleDirs gives a locale its own directory: {\"tr\": \"content/blog/tr\"}. A locale not named reads Dir.",
-          "additionalProperties": {
-            "type": "string"
+        "extensions": {
+          "type": "array",
+          "description": "Extensions names the extensions to turn on. Left out, it is every one but definitionList and typographer; a list replaces that whole, so [] turns them all off.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "definitionList",
+              "footnote",
+              "headingAttributes",
+              "headingIDs",
+              "linkify",
+              "mark",
+              "strikethrough",
+              "table",
+              "taskList",
+              "typographer"
+            ]
           }
         },
         "unsafe": {
@@ -1071,7 +1075,7 @@
           "description": "Unsafe lets raw HTML written in the Markdown through to the page. Off, it is left out, so a document cannot put a script on the site, and a heading's {…} attributes lose style and any on… handler, so it cannot restyle the page either; id and class are kept."
         }
       },
-      "markdownDescription": "A collage plugin that makes a directory of Markdown files page data.\n\n[collage-markdown](https://github.com/Elagoht/collage-markdown)",
+      "markdownDescription": "A collage plugin that renders Markdown strings as HTML.\n\n[collage-markdown](https://github.com/Elagoht/collage-markdown)",
       "additionalProperties": false
     },
     "elagoht/meta": {

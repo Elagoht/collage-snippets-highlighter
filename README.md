@@ -38,8 +38,8 @@ pages — for collage's own template functions and those of its
 Every Go snippet brings what the file needs to compile: its package clause when it
 has none, and the imports it lacks. They follow the layout `collage new` scaffolds
 and `collage add` writes — `pages/<area>/` builds a page, `fragments/pages/<area>/`
-its content, `fragments/layouts/` the layouts, `actions/<area>.go` the actions and
-`actions/funcs/<area>.go` their handlers. Exported functions come with a one-line
+its content, `fragments/layouts/` the layouts, `actions/<area>/<name>.go` an action
+with its handler under it. Exported functions come with a one-line
 comment, a signature of several parameters takes a line for each, and data is a
 typed view, never `any`. Placeholders name what goes in them — `name`, `Name`,
 `service`, `*domain.Service`, `slot`, `id` — and one typed once fills every place

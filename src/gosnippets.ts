@@ -23,8 +23,8 @@ export interface FunctionSnippet {
 
 // The snippets follow the layout `collage new` scaffolds and `collage add` writes:
 // pages/<area>/<name>.go builds a page, fragments/pages/<area>/<name>.go its
-// content, fragments/layouts the layouts, actions/<area>.go the action builders and
-// actions/funcs/<area>.go their handlers, documents/ and data/<domain>/ the rest.
+// content, fragments/layouts the layouts, actions/<area>/<name>.go an action
+// with its handler under it, documents/ and data/<domain>/ the rest.
 // Exported functions carry a one-line comment, a signature with more than one
 // parameter takes a line for each, and data is typed: a view struct, never any.
 // Placeholders name what goes in them, never an example domain: ${1:name} is the
@@ -60,7 +60,7 @@ export const functionSnippets: FunctionSnippet[] = [
       "\t\tWithLayouts(layouts.${5:Layout}()).",
       "\t\tWithContent(fragments.${2:Name}()).",
       "\t\tWithPath(\"${6:en}\", \"${7:/path}\").",
-      "\t\tWithActionFor(actions.${2:Name}(${3:service})).",
+      "\t\tWithActionFor(${8:area}actions.${2:Name}(${3:service})).",
       "\t\tBuild()",
       "}",
     ],
@@ -334,10 +334,10 @@ export const functionSnippets: FunctionSnippet[] = [
     imports: ["context", "net/http", COLLAGE_IMPORT],
   },
 
-  // actions/<area>.go and actions/funcs/<area>.go
+  // actions/<area>/<name>.go: the builder, then its handler
   {
     prefix: "cact",
-    description: "collage: an action a page attaches with WithActionFor — no path of its own, the page's name (actions/<area>.go)",
+    description: "collage: an action a page attaches with WithActionFor — no path of its own, the page's name (actions/<area>/<name>.go)",
     body: [
       "// Returns the ${1:name} action. Its page attaches it with WithActionFor.",
       "func ${2:Action}(",
@@ -345,7 +345,7 @@ export const functionSnippets: FunctionSnippet[] = [
       ") *collage.Action {",
       "\treturn collage.NewAction(\"${1:name}\").",
       "\t\tWithMethods(http.MethodPost).",
-      "\t\tWithHandler(funcs.${2:Action}(${3:service})).",
+      "\t\tWithHandler(${5:action}Handler(${3:service})).",
       "\t\t$0Build()",
       "}",
     ],
@@ -362,7 +362,7 @@ export const functionSnippets: FunctionSnippet[] = [
       "\treturn collage.NewAction(\"${1:name}\").",
       "\t\tWithPath(\"${6:en}\", \"${2:/path}\").",
       "\t\tWithMethods(http.MethodPost).",
-      "\t\tWithHandler(funcs.${3:Action}(${4:service})).",
+      "\t\tWithHandler(${7:action}Handler(${4:service})).",
       "\t\tBuild()",
       "}",
     ],
@@ -370,10 +370,10 @@ export const functionSnippets: FunctionSnippet[] = [
   },
   {
     prefix: "cactf",
-    description: "collage: a form's handler — validated with collage-validate, answered with a flash message and a redirect by name (actions/funcs/<area>.go)",
+    description: "collage: a form's handler — validated with collage-validate, answered with a flash message and a redirect by name (actions/<area>/<name>.go, under its builder)",
     body: [
       "// Validates the ${1:name} form, ${2:saves it} and redirects to the ${3:target} page.",
-      "func ${4:Action}(",
+      "func ${4:action}Handler(",
       "\t${5:service} ${6:*domain.Service},",
       ") collage.ActionHandlerFunc {",
       "\treturn func(",
@@ -407,7 +407,7 @@ export const functionSnippets: FunctionSnippet[] = [
       "}",
       "",
       "// Answers the ${1:name} action with ${3:its result}.",
-      "func ${4:Action}() collage.ActionHandlerFunc {",
+      "func ${4:action}Handler() collage.ActionHandlerFunc {",
       "\treturn func(",
       "\t\tctx context.Context,",
       "\t\trc *collage.RenderContext,",

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.28.0
+
+For collage v0.80.0.
+
+- **An action's handler is written under its builder**, in
+  `actions/<area>/<name>.go`, one action per file as collage v0.80.0 scaffolds it: `cact` and `cactp` call
+  `WithHandler(actionHandler(service))`, and `cactf` and `cactj` declare
+  `func actionHandler(...)`, and `cpagea` attaches the action from its area's
+  package, `areaactions.Name(service)`. Nothing refers to `actions/funcs/` any more.
+
 ## 0.27.0
 
 For collage v0.79.0 and the plugin releases that followed it.

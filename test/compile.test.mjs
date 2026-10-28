@@ -46,7 +46,6 @@ const commonStubs = {
   },
   layouts: { imports: [COLLAGE_IMPORT], src: ["func Layout() *collage.Fragment { return nil }"] },
   guards: { imports: [COLLAGE_IMPORT, "@/domain"], src: ["func Guard(*domain.Service) collage.GuardFunc { return nil }"] },
-  funcs: { imports: [COLLAGE_IMPORT, "@/domain"], src: ["func Action(*domain.Service) collage.ActionHandlerFunc { return nil }"] },
   pages: { imports: [COLLAGE_IMPORT], src: ["func Name() *collage.Page { return nil }"] },
   errorpages: { imports: [COLLAGE_IMPORT], src: ["func NotFoundPage() *collage.Page { return nil }"] },
 };
@@ -59,12 +58,16 @@ const specs = {
   cpagea: {
     stubs: {
       fragments: { imports: [COLLAGE_IMPORT], src: ["func Name() *collage.Fragment { return nil }"] },
-      actions: { imports: [COLLAGE_IMPORT, "@/domain"], src: ["func Name(*domain.Service) *collage.Action { return nil }"] },
+      // actions/<area>, imported as <area>actions.
+      areaactions: { imports: [COLLAGE_IMPORT, "@/domain"], src: ["func Name(*domain.Service) *collage.Action { return nil }"] },
     },
   },
   cpagep: {
     stubs: { fragments: { imports: [COLLAGE_IMPORT, "@/domain"], src: ["func Name(*domain.Service) *collage.Fragment { return nil }"] } },
   },
+  // An action's handler is in its file, under the builder.
+  cact: { context: { imports: [COLLAGE_IMPORT, "@/domain"], src: ["func actionHandler(*domain.Service) collage.ActionHandlerFunc { return nil }"] } },
+  cactp: { context: { imports: [COLLAGE_IMPORT, "@/domain"], src: ["func actionHandler(*domain.Service) collage.ActionHandlerFunc { return nil }"] } },
   cpage404: { stubs: { fragments: { imports: [COLLAGE_IMPORT], src: ["func NotFound() *collage.Fragment { return nil }"] } } },
   cfrags: {
     context: {

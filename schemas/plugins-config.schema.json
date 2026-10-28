@@ -749,6 +749,12 @@
       "markdownDescription": "A collage plugin for flash messages: a message an action sets before it redirects, shown once by the page it redirects to.\n\n[collage-flash](https://github.com/Elagoht/collage-flash)",
       "additionalProperties": false
     },
+    "elagoht/gesso": {
+      "type": "object",
+      "description": "A collage plugin that runs a gesso application's lifecycle: the app's modules (a queue worker, a warmed cache) start when collage starts serving, and stop, followed by the app's OnShutdown hooks, after collage's server has stopped and no request can reach them. It takes no configuration from JSON: it is configured in Go.",
+      "markdownDescription": "A collage plugin that runs a gesso application's lifecycle: the app's modules (a queue worker, a warmed cache) start when collage starts serving, and stop, followed by the app's OnShutdown hooks, after collage's server has stopped and no request can reach them.\n\n[collage-gesso](https://github.com/Elagoht/collage-gesso)\n\nIt takes no configuration from JSON: it is configured in Go.",
+      "additionalProperties": false
+    },
     "elagoht/health": {
       "type": "object",
       "description": "Package health answers liveness and readiness probes for a collage application, turns readiness false while the server drains, and can shed load past a cap on requests in flight.",

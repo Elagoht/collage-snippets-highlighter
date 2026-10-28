@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.29.0
+
+For collage-gesso v0.1.1.
+
+- **elagoht/gesso** is in the plugins-config schema: it runs a gesso
+  application's lifecycle inside collage, and takes nothing from
+  `plugins-config.json` — an unknown key under it is flagged.
+
 ## 0.28.0
 
 For collage v0.80.0.
